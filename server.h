@@ -6,6 +6,8 @@
 #include <unistd.h>
 /* struct sockaddr_in */
 #include <netinet/in.h>
+/* bzero() */
+#include <string.h>
 
 /* Print out the program usage string */
 #define USAGE(void) do {\
