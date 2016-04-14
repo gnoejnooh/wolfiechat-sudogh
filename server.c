@@ -1,5 +1,12 @@
 #include "server.h"
 
+void sig_handler(int signal) {
+	if(signal == SIGINT) {
+		printf(" Handling SIGINT...\n");
+		exit(0);
+	}
+}
+
 int main(int argc, char *argv[]) {
 	int opt;
 	int sockfd;
@@ -9,6 +16,13 @@ int main(int argc, char *argv[]) {
 	char* motd = NULL;
 	char buffer[MAX_INPUT];
 	struct sockaddr_in serv_addr, cli_addr;
+
+	struct sigaction sa;
+	sa.sa_handler = &sig_handler;
+	sa.sa_flags = SA_RESTART;
+
+	if(sigaction(SIGINT, &sa, NULL) == -1)
+		printf("Error: cannot handle SIGINT\n");
 
 	while((opt = getopt(argc, argv, "hv:")) != -1) {
         switch(opt) {
@@ -47,6 +61,7 @@ int main(int argc, char *argv[]) {
     }
     /* Create new socket */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    signal(SIGINT, sig_handler);
     /* Set buffer to zero */
     bzero((char*) &serv_addr, sizeof(serv_addr));
     /*
@@ -64,6 +79,7 @@ int main(int argc, char *argv[]) {
 	bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr));
 	/* Listen on the socket for connection */
 	listen(sockfd, 5);
+	printf("Currently listening on port %d\n", portno);
 	//TODO: implement i/o multiplexing to watch multiple client
 	/* Block process until a client connects to the server- */
 	clilen = sizeof(cli_addr);
@@ -74,6 +90,8 @@ int main(int argc, char *argv[]) {
 	bzero(buffer, MAX_INPUT);
 	read(cli_sockfd, buffer, MAX_INPUT);
 	printf("%s\n", buffer);
+
+	close(sockfd);
 
 	return 0;
 }

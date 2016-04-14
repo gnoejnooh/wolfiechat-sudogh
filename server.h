@@ -8,6 +8,8 @@
 #include <netinet/in.h>
 /* bzero() */
 #include <string.h>
+/* signal() */
+#include <signal.h>
 
 #define MAX_INPUT   1024
 
