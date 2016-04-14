@@ -1,10 +1,13 @@
 CC = gcc
-CFLAG = -Wall -Werror
+CFLAG = -Wall -Werror -g
 
-all: server
+all: server client
 
 server: server.c
 	$(CC) $(CFLAG) server.c -o server
 
+client: client.c
+	$(CC) $(CFLAG) client.c -o client
+
 clean:
-	rm *.o server
+	rm -f *~ *.o server client

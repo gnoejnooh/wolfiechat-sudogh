@@ -9,13 +9,15 @@
 /* bzero() */
 #include <string.h>
 
+#define MAX_INPUT   1024
+
 /* Print out the program usage string */
 #define USAGE(void) do {\
     fprintf(stderr,\
-        "\nUSAGE: [-h|-v] PORT_NUMBER MOTD\n"\
-        "-h           Displays help menu & returns EXIT_SUCCESS."\
-        "-v           Verbose print all incoming and outgoing protocol verbs & content."\
-        "PORT_NUMBER  Port number to listen on."\
-        "MOTD         Message to display to the client when they connect."\
+        "USAGE: [-h|-v] PORT_NUMBER MOTD\n"\
+        "-h           Displays help menu & returns EXIT_SUCCESS.\n"\
+        "-v           Verbose print all incoming and outgoing protocol verbs & content.\n"\
+        "PORT_NUMBER  Port number to listen on.\n"\
+        "MOTD         Message to display to the client when they connect.\n"\
     );\
 } while(0)

@@ -4,9 +4,10 @@ int main(int argc, char *argv[]) {
 	int opt;
 	int sockfd;
 	int cli_sockfd;
-	socklen_t clilen;
 	int portno;
+	socklen_t clilen;
 	char* motd = NULL;
+	char buffer[MAX_INPUT];
 	struct sockaddr_in serv_addr, cli_addr;
 
 	while((opt = getopt(argc, argv, "hv:")) != -1) {
@@ -63,9 +64,16 @@ int main(int argc, char *argv[]) {
 	bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr));
 	/* Listen on the socket for connection */
 	listen(sockfd, 5);
-	//TODO: use fork to accept multiple client (maybe?)
+	//TODO: implement i/o multiplexing to watch multiple client
 	/* Block process until a client connects to the server- */
 	clilen = sizeof(cli_addr);
 	cli_sockfd = accept(sockfd, (struct sockaddr*) &cli_addr, &clilen);
-	//TODO: read from cli_sockfd
+	/* Write welcome message to client */
+	write(cli_sockfd, motd, strlen(motd));
+	/* Initialize buffer and read from it */
+	bzero(buffer, MAX_INPUT);
+	read(cli_sockfd, buffer, MAX_INPUT);
+	printf("%s\n", buffer);
+
+	return 0;
 }
