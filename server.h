@@ -13,6 +13,9 @@
 
 #define MAX_INPUT   1024
 
+#define TRUE    1
+#define FALSE   0
+
 /* Print out the program usage string */
 #define USAGE(void) do {\
     fprintf(stderr,\
