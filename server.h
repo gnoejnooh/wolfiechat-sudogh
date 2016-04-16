@@ -12,6 +12,10 @@
 #define FALSE   		0
 #define MAX_LEN			1024
 
+void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
+void Signal(int sig, void (*func)(int));
+void Socket(int domain, int type, int protocol);
+
 void printUsage();
 void printError(const char *msg);
 

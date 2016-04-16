@@ -2,8 +2,8 @@
 
 int main(int argc, char **argv) {
 
-	int sockfd;
-  int cli_sockfd;
+	int listenfd;
+  int connfd;
 	int portno;
 
 	fd_set input;
@@ -17,20 +17,13 @@ int main(int argc, char **argv) {
 	sa.sa_handler = &sigHandler;
 	sa.sa_flags = SA_RESTART;
 
-	if(sigaction(SIGINT, &sa, NULL) == -1) {
-		printError("cannot handle SIGINT\n");
-  }
+	Sigaction(SIGINT, &sa, NULL);
+  Signal(SIGINT, sigHandler);
 
 	parseOption(argc, argv, &portno, motd);
 
   /* Create new socket */
-  if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    printError("unable to open a socket");
-  }
-
-  if(signal(SIGINT, sigHandler) == SIG_ERR) {
-    printError("signal");
-  }
+  listenfd = Socket(AF_INET, SOCK_STREAM, 0);  
 
   /*
    * struct sockaddr_in {
@@ -45,15 +38,15 @@ int main(int argc, char **argv) {
   bzero((char*) &serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(portno);
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
+  serv_addr.sin_addr.s_addr = F;
 
 	/* Bind socket to an address */
-	if(bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
+	if(bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
 		printError("unable to bind");
   }
 
 	/* Listen on the socket for connection */
-	listen(sockfd, 5);
+	listen(listenfd, 5);
 
 	/* Get client address length */
 	clilen = sizeof(cli_addr);
@@ -65,14 +58,14 @@ int main(int argc, char **argv) {
 	while(TRUE) {
 		/* Initialize fdset */
 		FD_ZERO(&input);
-		FD_SET(sockfd, &input);
+		FD_SET(listenfd, &input);
 		FD_SET(fileno(stdin), &input);
 
     printf("server> ");
     fflush(stdout);
 
 		/* Use select() to determine which fd is used */
-		if(select(sockfd+1, &input, 0, 0, 0) < 0) {
+		if(select(listenfd+1, &input, 0, 0, 0) < 0) {
 			printError("something went wrong with select");
     }
 
@@ -99,29 +92,56 @@ int main(int argc, char **argv) {
 		}
 
 		/* Accept connection and spawn login thread */
-		if(FD_ISSET(sockfd, &input)) {
+		if(FD_ISSET(listenfd, &input)) {
 			/* Block process until a client connects to the server- */
-			cli_sockfd = accept(sockfd, (struct sockaddr*) &cli_addr, &clilen);
-			if(cli_sockfd < 0)
+			connfd = accept(listenfd, (struct sockaddr*) &cli_addr, &clilen);
+
+			if(connfd < 0) {
 				printError("unable to accept connection");
+      }
+
 			/* Write message of the day to client */
-			if(write(cli_sockfd, motd, strlen(motd)) < 0)
+			if(write(connfd, motd, strlen(motd)) < 0) {
 				printError("unable to write message of the day");
+      }
+
 			/* Initialize buffer and echo client's msg */
 			bzero(buffer, MAX_LEN);
-			if(read(cli_sockfd, buffer, MAX_LEN) < 0)
+
+			if(read(connfd, buffer, MAX_LEN) < 0) {
 				printError("unable to read from client socket");
-			if(write(cli_sockfd, buffer, MAX_LEN) < 0)
+      }
+
+			if(write(connfd, buffer, MAX_LEN) < 0) {
 				printError("unable to write to client socket");
+      }
 			//TODO: Spawn a new thread to verify user name
-			close(cli_sockfd);
+			close(connfd);
 		}
 	}
 
 	printf("Shutting down...\n");
-	close(sockfd);
+	close(listenfd);
 
 	return 0;
+}
+
+void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
+  if(sigaction(signum, act, oldact) == -1) {
+    printError("ERROR: Cannot handle SIGINT");
+  }
+}
+
+void Socket(int domain, int type, int protocol) {
+  if(socket(domain, type, protocol) == -1) {
+    printError("ERROR: Unable to open a socket");
+  }
+}
+
+void Signal(int sig, void (*func)(int)) {
+  if(signal(sig, func) == SIG_ERR) {
+    printError("ERROR: Error on signal handler");
+  }
 }
 
 void printUsage() {
