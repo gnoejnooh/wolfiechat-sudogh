@@ -35,13 +35,13 @@ int main(int argc, char **argv) {
 	/* Open database */
 	int rc = sqlite3_open("usrinfo", &db);
 	if(rc != SQLITE_OK) {
-		error("Cannot open database");
+		printError("Cannot open database");
 		sqlite3_close(db);
 	}
 	/* Prepare database */
 	rc = sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
 	if(rc != SQLITE_OK) {
-		error("Failed to fetch data");
+		printError("Failed to fetch data");
 		sqlite3_close(db);
 	}
 
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
 			pthread_create(&thread, 0, (void*)&handler, (void*) &cli_sockfd);
 			/* Write message of the day to client */
 			if(write(cli_sockfd, motd, strlen(motd)) < 0)
-				error("unable to write message of the day");
+				printError("unable to write message of the day");
 			
 			//TODO: Spawn a new thread to verify user name
 			close(cli_sockfd);
