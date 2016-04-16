@@ -71,15 +71,17 @@ int main(int argc, char* argv[]) {
   strip_crnl(buffer);
   printf("%s\n", buffer);
 
-  FD_ZERO(&input);
-  FD_SET(listenfd, &input);
-  FD_SET(fileno(stdin), &input);
+  
   
   while(TRUE) {
+    FD_ZERO(&input);
+    FD_SET(listenfd, &input);
+    FD_SET(fileno(stdin), &input);
+
     printf("%s> ", name);
     fflush(stdout);
 
-    if(select(1, &input, 0, 0, 0) < 0) {
+    if(select(listenfd+1, &input, 0, 0, 0) < 0) {
       printError("something went wrong with select");
     }
 
@@ -98,10 +100,10 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "\x1B[1;31mError: command does not exist\x1B[0m\n");
       }
     }
-
-    if(FD_ISSET(listenfd, &input)) {
-      rc = recv(listenfd, buffer, sizeof(buffer), 0);
-      buffer[rc] = '\0';
+    else {
+    //if(FD_ISSET(listenfd, &input)) {
+      rc = read(listenfd, buffer, sizeof(buffer));
+      strip_crnl(buffer);
       printf("%s\n", buffer);
       fflush(stdout);
     }

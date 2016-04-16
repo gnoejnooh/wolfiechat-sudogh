@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 		  	}
 		  }
 		  /* Add new user name to database */
-		  char* query = sqlite3_mprintf("INSERT INTO USERS (ID,NAME) VALUES (1, %q);", buffer);
+		  char* query = sqlite3_mprintf("INSERT INTO USERS (ID,NAME) VALUES (1, %q);", name);
 		  sqlite3_exec(db, query, 0, 0, &err_msg);
 		  strncpy(name, buf_in+4, strlen(buf_in)); 
 		  sprintf(buf_out, "HI %s\r\n\r\n", name);
@@ -136,7 +136,6 @@ int main(int argc, char **argv) {
 		  }
 
 			pthread_create(&tid, 0, (void*)&handler, (void*) &connfd);
-			close(connfd);
 		}
 	}
 
@@ -194,7 +193,7 @@ void Bind(int socket, const struct sockaddr *address, socklen_t address_len) {
 }
 
 void Sqlite3_open(const char *filename, sqlite3 **ppDb) {
-  int rc = sqlite3_open("usrinfo", ppDb);
+  int rc = sqlite3_open(filename, ppDb);
   if(rc != SQLITE_OK) {
     printError("ERROR: Cannot open database");
     sqlite3_close(*ppDb);
@@ -210,14 +209,16 @@ void Sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt *
 }
 
 void handler(void* incoming) {
-	socklen_t clilen;
+	//socklen_t clilen;
 	int connfd;
-	struct sockaddr_in cli_addr;
+	//char buf_in[MAX_LEN];
+	//char buf_out[MAX_LEN];
+	//struct sockaddr_in cli_addr;
 	/* Store client socket descriptor */
 	connfd = *((int*) incoming);
-	clilen = sizeof(cli_addr);
-
-	getpeername(connfd, (struct sockaddr*) &cli_addr, &clilen);
+	//clilen = sizeof(cli_addr);
+	write(connfd, "~Logged in SUCCESSFULLY~\n", 25);
+	
 }
 
 void printUsage() {
@@ -241,7 +242,7 @@ void sigHandler(int signal) {
 }
 
 void initializeDatabase(sqlite3 *db, sqlite3_stmt *res, char *err_msg) {
-  Sqlite3_open("usrinfo", &db);
+  Sqlite3_open("usrinfo.db", &db);
   Sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
   sqlite3_step(res);
 }
