@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
 		printError("Cannot open database");
 		sqlite3_close(db);
 	}
+  
 	/* Prepare database */
 	rc = sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
 	if(rc != SQLITE_OK) {
