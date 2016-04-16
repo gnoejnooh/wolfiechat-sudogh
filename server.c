@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 			} else if(!strcmp(buffer, "/shutdown\n")) {
 				break;
 			} else {
-				fprintf(stderr, "\x1B[1;31mError: command does not exist\x1B[0m\n");
+				fprintf(stderr, "\x1B[1;31mERROR: command does not exist\x1B[0m\n");
 			}
 		}
 
