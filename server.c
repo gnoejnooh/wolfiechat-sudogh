@@ -1,12 +1,5 @@
 #include "server.h"
-/*
-typedef struct {
-	struct sockaddr_in addr;
-	int fd;
-	int id;
-	char name[]
-}
-*/
+
 int main(int argc, char **argv) {
 
 	int listenfd;
@@ -17,12 +10,13 @@ int main(int argc, char **argv) {
 	socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr;
 	
-  //struct hostent *hostinfo;
-	//char* hostaddrp;
 	pthread_t tid;
 
   char motd[MAX_LEN];
 	char buffer[MAX_LEN];
+	char buf_in[MAX_LEN];
+	char buf_out[MAX_LEN];
+	char name[MAX_LEN];
 	
 	struct sigaction sa;
 
@@ -72,7 +66,7 @@ int main(int argc, char **argv) {
 	printf("Currently listening on port %d\n", portno);
 	
 	char* sql = "DROP TABLE IF EXISTS;"
-	            "CREATE TABLE USERS(Id INT Name TEXT);";
+	            "CREATE TABLE USERS(ID INT NAME TEXT);";
 	
   sqlite3_exec(db, sql, 0, 0, &err_msg);
 	/*
@@ -121,41 +115,27 @@ int main(int argc, char **argv) {
 			if(connfd < 0) {
 				printError("unable to accept connection");
       }
-
-			/* Write message of the day to client */
-			if(write(connfd, motd, strlen(motd)) < 0) {
-				printError("unable to write message of the day");
-      }
-
-			/* Initialize buffer and echo client's msg */
-			bzero(buffer, MAX_LEN);
-
-			if(read(connfd, buffer, MAX_LEN) < 0) {
-				printError("unable to read from client socket");
-      }
-
-			if(write(connfd, buffer, MAX_LEN) < 0) {
-				printError("unable to write to client socket");
-      }
-
-			/*
-			hostinfo = gethostbyaddr((const char*) &cli_addr.sin_addr.s_addr, sizeof(cli_addr.sin_addr.s_addr), AF_INET);
-			if(hostinfo == NULL)
-				error("gethostbyaddr");
-			hostaddrp = inet_ntoa(cli_addr.sin_addr);
-			if(hostaddrp == NULL)
-				error("inet_ntoa");
-			printf("%s, %s\n", hostinfo->h_name, hostaddrp);
-			*/
+      wolfieProtocol(connfd);
+      bzero(buf_in, sizeof(buf_in));
+			if(read(connfd, buf_in, sizeof(buf_in)) < 0) {
+				printf("unable to read login protocol\n");
+		  }
+		  /* Check if the user name is taken */
+		  while(sqlite3_step(res) == SQLITE_ROW) {
+		  	if(!strcmp((char*)sqlite3_column_text(res, 1), buf_in)) {
+		  		printf("send ERR 00 USER NAME TAKEN to client");
+		  	}
+		  }
+		  /* Add new user name to database */
+		  char* query = sqlite3_mprintf("INSERT INTO USERS (ID,NAME) VALUES (1, %q);", name);
+		  sqlite3_exec(db, query, 0, 0, &err_msg);
+		  strncpy(name, buf_in+4, strlen(buf_in)); 
+		  sprintf(buf_out, "HI %s\r\n\r\n", name);
+		  if(write(connfd, buf_out, sizeof(buf_out)) < 0) {
+				printf("unable to write login protocol\n");
+		  }
 
 			pthread_create(&tid, 0, (void*)&handler, (void*) &connfd);
-
-			/* Write message of the day to client */
-      if(write(connfd, motd, strlen(motd)) < 0) {
-        printError("unable to write message of the day");
-      }
-			//TODO: Spawn a new thread to verify user name
-			close(connfd);
 		}
 	}
 
@@ -166,6 +146,22 @@ int main(int argc, char **argv) {
 	close(listenfd);
 
 	return 0;
+}
+
+void wolfieProtocol(int connfd) {
+	char buffer[10];
+	/* Read WOLFIE protocol */
+  bzero(buffer, sizeof(buffer));
+	if(read(connfd, buffer, sizeof(buffer)) < 0) {
+		printf("unable to read WOLFIE protocol\n");
+  }
+  if(strcmp(buffer, "WOLFIE\r\n\r\n")) {
+  	printError("protocol does not match");
+  }
+
+  if(write(connfd, "EIFLOW\r\n\r\n", 10) < 0) {
+		printError("unable to write EIFLOW protocol");
+  }
 }
 
 void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
@@ -197,7 +193,7 @@ void Bind(int socket, const struct sockaddr *address, socklen_t address_len) {
 }
 
 void Sqlite3_open(const char *filename, sqlite3 **ppDb) {
-  int rc = sqlite3_open("usrinfo", ppDb);
+  int rc = sqlite3_open(filename, ppDb);
   if(rc != SQLITE_OK) {
     printError("ERROR: Cannot open database");
     sqlite3_close(*ppDb);
@@ -213,14 +209,16 @@ void Sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt *
 }
 
 void handler(void* incoming) {
-	socklen_t clilen;
+	//socklen_t clilen;
 	int connfd;
-	struct sockaddr_in cli_addr;
+	//char buf_in[MAX_LEN];
+	//char buf_out[MAX_LEN];
+	//struct sockaddr_in cli_addr;
 	/* Store client socket descriptor */
 	connfd = *((int*) incoming);
-	clilen = sizeof(cli_addr);
-
-	getpeername(connfd, (struct sockaddr*) &cli_addr, &clilen);
+	//clilen = sizeof(cli_addr);
+	write(connfd, "~Logged in SUCCESSFULLY~\n", 25);
+	
 }
 
 void printUsage() {
@@ -244,7 +242,7 @@ void sigHandler(int signal) {
 }
 
 void initializeDatabase(sqlite3 *db, sqlite3_stmt *res, char *err_msg) {
-  Sqlite3_open("usrinfo", &db);
+  Sqlite3_open("usrinfo.db", &db);
   Sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
   sqlite3_step(res);
 }

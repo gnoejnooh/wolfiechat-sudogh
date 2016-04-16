@@ -8,11 +8,15 @@
 #include <netdb.h>
 
 #define TRUE			1
+#define FALSE			0
 #define MAX_LEN		1024
 
 void printUsage();
 
 void parseOption(int argc, char **argv, char *name, char *addr, char *portno);
 void printError(const char *msg);
+
+void wolfieProtocol(int listenfd);
+void strip_crnl(char* str);
 
 #endif

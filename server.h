@@ -36,4 +36,6 @@ void parseOption(int argc, char **argv, int *portno, char *motd);
 
 void handler(void* incoming);
 
+void wolfieProtocol(int connfd);
+
 #endif
