@@ -1,28 +1,22 @@
-/* fprintf() */
+#ifndef __SERVER_H__
+#define __SERVER_H__
+
 #include <stdio.h>
-/* exit() */
 #include <stdlib.h>
-/* getopt() */
-#include <unistd.h>
-/* struct sockaddr_in */
-#include <netinet/in.h>
-/* bzero() */
 #include <string.h>
-/* signal() */
 #include <signal.h>
+#include <unistd.h>
+#include <netinet/in.h>
 
-#define MAX_INPUT   1024
+#define TRUE    		1
+#define FALSE   		0
+#define MAX_LEN			1024
 
-#define TRUE    1
-#define FALSE   0
+void printUsage();
+void printError(const char *msg);
 
-/* Print out the program usage string */
-#define USAGE(void) do {\
-    fprintf(stderr,\
-        "USAGE: [-h|-v] PORT_NUMBER MOTD\n"\
-        "-h           Displays help menu & returns EXIT_SUCCESS.\n"\
-        "-v           Verbose print all incoming and outgoing protocol verbs & content.\n"\
-        "PORT_NUMBER  Port number to listen on.\n"\
-        "MOTD         Message to display to the client when they connect.\n"\
-    );\
-} while(0)
+void sigHandler(int signal);
+
+void parseOption(int argc, char **argv, int *portno, char *motd);
+
+#endif
