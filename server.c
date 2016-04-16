@@ -14,6 +14,9 @@ int main(int argc, char **argv) {
 
   char motd[MAX_LEN];
 	char buffer[MAX_LEN];
+	char buf_in[MAX_LEN];
+	char buf_out[MAX_LEN];
+	char name[MAX_LEN];
 	
 	struct sigaction sa;
 
@@ -63,7 +66,7 @@ int main(int argc, char **argv) {
 	printf("Currently listening on port %d\n", portno);
 	
 	char* sql = "DROP TABLE IF EXISTS;"
-	            "CREATE TABLE USERS(Id INT Name TEXT);";
+	            "CREATE TABLE USERS(ID INT NAME TEXT);";
 	
   sqlite3_exec(db, sql, 0, 0, &err_msg);
 	/*
@@ -112,11 +115,27 @@ int main(int argc, char **argv) {
 			if(connfd < 0) {
 				printError("unable to accept connection");
       }
-
       wolfieProtocol(connfd);
+      bzero(buf_in, sizeof(buf_in));
+			if(read(connfd, buf_in, sizeof(buf_in)) < 0) {
+				printf("unable to read login protocol\n");
+		  }
+		  /* Check if the user name is taken */
+		  while(sqlite3_step(res) == SQLITE_ROW) {
+		  	if(!strcmp((char*)sqlite3_column_text(res, 1), buf_in)) {
+		  		printf("send ERR 00 USER NAME TAKEN to client");
+		  	}
+		  }
+		  /* Add new user name to database */
+		  char* query = sqlite3_mprintf("INSERT INTO USERS (ID,NAME) VALUES (1, %q);", buffer);
+		  sqlite3_exec(db, query, 0, 0, &err_msg);
+		  strncpy(name, buf_in+4, strlen(buf_in)); 
+		  sprintf(buf_out, "HI %s\r\n\r\n", name);
+		  if(write(connfd, buf_out, sizeof(buf_out)) < 0) {
+				printf("unable to write login protocol\n");
+		  }
 
 			pthread_create(&tid, 0, (void*)&handler, (void*) &connfd);
-
 			close(connfd);
 		}
 	}

@@ -58,6 +58,18 @@ int main(int argc, char* argv[]) {
   }
 
   wolfieProtocol(listenfd);
+  sprintf(buffer, "IAM %s\r\n\r\n", name);
+  rc = write(listenfd, buffer, sizeof(buffer));
+  if(rc < 0) {
+    printError("unable to write login protocol");
+  }
+  bzero(buffer, sizeof(buffer));
+  rc = read(listenfd, buffer, sizeof(buffer));
+  if(rc < 0) {
+    printError("unable to read login protocol");
+  }
+  strip_crnl(buffer);
+  printf("%s\n", buffer);
 
   FD_ZERO(&input);
   FD_SET(listenfd, &input);
@@ -99,6 +111,15 @@ int main(int argc, char* argv[]) {
   freeaddrinfo(servinfo);
   printf("Logged out successfully...\n");
   return 0;
+}
+
+void strip_crnl(char* str) {
+  while(*str != '\0') {
+    if(*str == '\r' || *str == '\n') {
+      *str = '\0';
+    }
+    str++;
+  }
 }
 
 void wolfieProtocol(int listenfd) {

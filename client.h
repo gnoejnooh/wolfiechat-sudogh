@@ -17,5 +17,6 @@ void parseOption(int argc, char **argv, char *name, char *addr, char *portno);
 void printError(const char *msg);
 
 void wolfieProtocol(int listenfd);
+void strip_crnl(char* str);
 
 #endif
