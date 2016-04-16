@@ -19,37 +19,25 @@ int main(int argc, char **argv) {
 	
   //struct hostent *hostinfo;
 	//char* hostaddrp;
-	pthread_t thread;
+	pthread_t tid;
 
   char motd[MAX_LEN];
 	char buffer[MAX_LEN];
 	
 	struct sigaction sa;
-	sa.sa_handler = &sigHandler;
-	sa.sa_flags = SA_RESTART;
 
-	Sigaction(SIGINT, &sa, NULL);
+	sqlite3 *db = NULL;
+	sqlite3_stmt *res = NULL;
+	char* err_msg = NULL;
+
+  sa.sa_handler = &sigHandler;
+  sa.sa_flags = SA_RESTART;
+
+  Sigaction(SIGINT, &sa, NULL);
   Signal(SIGINT, sigHandler);
 
-	sqlite3 *db;
-	sqlite3_stmt *res;
-	char* err_msg = 0;
-
-	/* Open database */
-	int rc = sqlite3_open("usrinfo", &db);
-	if(rc != SQLITE_OK) {
-		printError("Cannot open database");
-		sqlite3_close(db);
-	}
-  
-	/* Prepare database */
-	rc = sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
-	if(rc != SQLITE_OK) {
-		printError("Failed to fetch data");
-		sqlite3_close(db);
-	}
-
-	rc = sqlite3_step(res);
+	/* Open and prepare database */
+  initializeDatabase(db, res, err_msg);
 
 	parseOption(argc, argv, &portno, motd);
 
@@ -72,9 +60,7 @@ int main(int argc, char **argv) {
   serv_addr.sin_addr.s_addr = INADDR_ANY;
 
 	/* Bind socket to an address */
-	if(bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
-		printError("unable to bind");
-  }
+	Bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
 
 	/* Listen on the socket for connection */
 	listen(listenfd, 5);
@@ -87,7 +73,8 @@ int main(int argc, char **argv) {
 	
 	char* sql = "DROP TABLE IF EXISTS;"
 	            "CREATE TABLE USERS(Id INT Name TEXT);";
-	rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+	
+  sqlite3_exec(db, sql, 0, 0, &err_msg);
 	/*
 	if(rc != SQLITE_OK) {
 		error("SQL error");
@@ -103,9 +90,6 @@ int main(int argc, char **argv) {
 		FD_SET(listenfd, &input);
 		FD_SET(fileno(stdin), &input);
 
-    printf("server> ");
-    fflush(stdout);
-
 		/* Use select() to determine which fd is used */
 		if(select(listenfd+1, &input, 0, 0, 0) < 0) {
 			printError("something went wrong with select");
@@ -113,6 +97,9 @@ int main(int argc, char **argv) {
 
 		/* Handle user command */
 		if(FD_ISSET(fileno(stdin), &input)) {
+      printf("server> ");
+      fflush(stdout);
+
 			bzero(buffer, MAX_LEN);
 			fgets(buffer, MAX_LEN, stdin);
 			if(!strcmp(buffer, "/users\n")) {
@@ -161,7 +148,7 @@ int main(int argc, char **argv) {
 			printf("%s, %s\n", hostinfo->h_name, hostaddrp);
 			*/
 
-			pthread_create(&thread, 0, (void*)&handler, (void*) &connfd);
+			pthread_create(&tid, 0, (void*)&handler, (void*) &connfd);
 
 			/* Write message of the day to client */
       if(write(connfd, motd, strlen(motd)) < 0) {
@@ -203,6 +190,28 @@ void Signal(int sig, void (*func)(int)) {
   }
 }
 
+void Bind(int socket, const struct sockaddr *address, socklen_t address_len) {
+  if(bind(socket, address, address_len) == -1) {
+    printError("ERROR: Unable to bind");
+  }
+}
+
+void Sqlite3_open(const char *filename, sqlite3 **ppDb) {
+  int rc = sqlite3_open("usrinfo", ppDb);
+  if(rc != SQLITE_OK) {
+    printError("ERROR: Cannot open database");
+    sqlite3_close(*ppDb);
+  }
+}
+
+void Sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt **ppStmt, const char **pzTail) {
+  int rc = sqlite3_prepare_v2(db, zSql, nByte, ppStmt, pzTail);
+  if(rc != SQLITE_OK) {
+    printError("ERROR: Failed to fetch data");
+    sqlite3_close(db);
+  }
+}
+
 void handler(void* incoming) {
 	socklen_t clilen;
 	int connfd;
@@ -232,6 +241,12 @@ void sigHandler(int signal) {
     printf("\nHandling SIGINT...\n");
     exit(0);
   }
+}
+
+void initializeDatabase(sqlite3 *db, sqlite3_stmt *res, char *err_msg) {
+  Sqlite3_open("usrinfo", &db);
+  Sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
+  sqlite3_step(res);
 }
 
 void parseOption(int argc, char **argv, int *portno, char *motd) {

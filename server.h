@@ -21,12 +21,17 @@
 void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
 void Signal(int sig, void (*func)(int));
 int Socket(int domain, int type, int protocol);
+void Bind(int socket, const struct sockaddr *address, socklen_t address_len);
+
+void Sqlite3_open(const char *filename, sqlite3 **ppDb);
+void Sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt **ppStmt, const char **pzTail);
 
 void printUsage();
 void printError(const char *msg);
 
 void sigHandler(int signal);
 
+void initializeDatabase(sqlite3 *db, sqlite3_stmt *res, char *err_msg);
 void parseOption(int argc, char **argv, int *portno, char *motd);
 
 void handler(void* incoming);
