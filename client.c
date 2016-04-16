@@ -56,31 +56,9 @@ int main(int argc, char* argv[]) {
     printError("cannot connect");
     exit(1);
   }
-  bzero(buffer, MAX_LEN);
-  rc = write(listenfd, "WOLFIE\r\n\r\n", 10);
-  if(rc < 0) {
-    printError("unable to write WOLFIE protocol");
-  }
-  /*
-  rc = read(sockfd, "EIFLOW\r\n\r\n", 10);
-  if(rc < 0) {
-    printError("unable to read EIFLOW protocol");
-  }
 
-  write(sockfd, "IAM ", 4);
-  write(sockfd, name, MAX_LEN);
-  write(sockfd, "\r\n\r\n", 4);
+  wolfieProtocol(listenfd);
 
-  read(sockfd, buffer, MAX_LEN);
-  if(buffer[0] != 'H') {
-    printError("User already logged in");
-  }
-  printf("%s\n", buffer);
-  printf("Logged in SUCCESSFULLY");
-  
-  read(sockfd, buffer, MAX_LEN);
-  printf("%s\n", buffer);
-  */
   FD_ZERO(&input);
   FD_SET(listenfd, &input);
   FD_SET(fileno(stdin), &input);
@@ -121,6 +99,23 @@ int main(int argc, char* argv[]) {
   freeaddrinfo(servinfo);
   printf("Logged out successfully...\n");
   return 0;
+}
+
+void wolfieProtocol(int listenfd) {
+  int rc;
+  char buffer[10];
+  rc = write(listenfd, "WOLFIE\r\n\r\n", 10);
+  if(rc < 0) {
+    printError("unable to write WOLFIE protocol");
+  }
+  bzero(buffer, sizeof(buffer));
+  rc = read(listenfd, buffer, sizeof(buffer));
+  if(rc < 0) {
+    printError("unable to read EIFLOW protocol");
+  }
+  if(strcmp(buffer, "EIFLOW\r\n\r\n")) {
+    printError("protocol does not match");
+  }
 }
 
 void printError(const char *msg) {

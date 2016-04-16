@@ -1,12 +1,5 @@
 #include "server.h"
-/*
-typedef struct {
-	struct sockaddr_in addr;
-	int fd;
-	int id;
-	char name[]
-}
-*/
+
 int main(int argc, char **argv) {
 
 	int listenfd;
@@ -17,8 +10,6 @@ int main(int argc, char **argv) {
 	socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr;
 	
-  //struct hostent *hostinfo;
-	//char* hostaddrp;
 	pthread_t tid;
 
   char motd[MAX_LEN];
@@ -122,39 +113,10 @@ int main(int argc, char **argv) {
 				printError("unable to accept connection");
       }
 
-			/* Write message of the day to client */
-			if(write(connfd, motd, strlen(motd)) < 0) {
-				printError("unable to write message of the day");
-      }
-
-			/* Initialize buffer and echo client's msg */
-			bzero(buffer, MAX_LEN);
-
-			if(read(connfd, buffer, MAX_LEN) < 0) {
-				printError("unable to read from client socket");
-      }
-
-			if(write(connfd, buffer, MAX_LEN) < 0) {
-				printError("unable to write to client socket");
-      }
-
-			/*
-			hostinfo = gethostbyaddr((const char*) &cli_addr.sin_addr.s_addr, sizeof(cli_addr.sin_addr.s_addr), AF_INET);
-			if(hostinfo == NULL)
-				error("gethostbyaddr");
-			hostaddrp = inet_ntoa(cli_addr.sin_addr);
-			if(hostaddrp == NULL)
-				error("inet_ntoa");
-			printf("%s, %s\n", hostinfo->h_name, hostaddrp);
-			*/
+      wolfieProtocol(connfd);
 
 			pthread_create(&tid, 0, (void*)&handler, (void*) &connfd);
 
-			/* Write message of the day to client */
-      if(write(connfd, motd, strlen(motd)) < 0) {
-        printError("unable to write message of the day");
-      }
-			//TODO: Spawn a new thread to verify user name
 			close(connfd);
 		}
 	}
@@ -166,6 +128,22 @@ int main(int argc, char **argv) {
 	close(listenfd);
 
 	return 0;
+}
+
+void wolfieProtocol(int connfd) {
+	char buffer[10];
+	/* Read WOLFIE protocol */
+  bzero(buffer, sizeof(buffer));
+	if(read(connfd, buffer, sizeof(buffer)) < 0) {
+		printf("unable to read WOLFIE protocol\n");
+  }
+  if(strcmp(buffer, "WOLFIE\r\n\r\n")) {
+  	printError("protocol does not match");
+  }
+
+  if(write(connfd, "EIFLOW\r\n\r\n", 10) < 0) {
+		printError("unable to write EIFLOW protocol");
+  }
 }
 
 void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
