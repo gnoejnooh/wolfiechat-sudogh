@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[]) {
 
-  int sockfd;
+  int listenfd;
   char portno[MAX_LEN];
   char addr[MAX_LEN];
   char name[MAX_LEN];
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 
   parseOption(argc, argv, name, addr, portno);
 
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  listenfd = socket(AF_INET, SOCK_STREAM, 0);
   
   /* Modify addrinfo hint struct */
   memset(&hints, 0, sizeof(hints));
@@ -53,16 +53,16 @@ int main(int argc, char* argv[]) {
   //bcopy((char*) server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
   //serv_addr.sin_port = htons(atoi(portno));
   /* Establish a connection */
-  //connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr));
-  connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
+  //connect(listenfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr));
+  connect(listenfd, servinfo->ai_addr, servinfo->ai_addrlen);
   /* Read welcome message from the server */
-  read(sockfd, buffer, MAX_LEN);
+  read(listenfd, buffer, MAX_LEN);
   printf("%s\n", buffer);
   /* Send message to the server */
   printf("%s: ", name);
   bzero(buffer, MAX_LEN);
   fgets(buffer, MAX_LEN, stdin);
-  write(sockfd, buffer, strlen(buffer));
+  write(listenfd, buffer, strlen(buffer));
   /* Free the linked list */
   freeaddrinfo(servinfo);
   return 0;

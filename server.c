@@ -1,5 +1,12 @@
 #include "server.h"
-
+/*
+typedef struct {
+	struct sockaddr_in addr;
+	int fd;
+	int id;
+	char name[]
+}
+*/
 int main(int argc, char **argv) {
 
 	int listenfd;
@@ -10,6 +17,10 @@ int main(int argc, char **argv) {
 	socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr;
 	
+  //struct hostent *hostinfo;
+	//char* hostaddrp;
+	pthread_t thread;
+
   char motd[MAX_LEN];
 	char buffer[MAX_LEN];
 	
@@ -19,6 +30,25 @@ int main(int argc, char **argv) {
 
 	Sigaction(SIGINT, &sa, NULL);
   Signal(SIGINT, sigHandler);
+
+	sqlite3 *db;
+	sqlite3_stmt *res;
+	char* err_msg = 0;
+
+	/* Open database */
+	int rc = sqlite3_open("usrinfo", &db);
+	if(rc != SQLITE_OK) {
+		printError("Cannot open database");
+		sqlite3_close(db);
+	}
+	/* Prepare database */
+	rc = sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
+	if(rc != SQLITE_OK) {
+		printError("Failed to fetch data");
+		sqlite3_close(db);
+	}
+
+	rc = sqlite3_step(res);
 
 	parseOption(argc, argv, &portno, motd);
 
@@ -38,7 +68,7 @@ int main(int argc, char **argv) {
   bzero((char*) &serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(portno);
-  serv_addr.sin_addr.s_addr = F;
+  serv_addr.sin_addr.s_addr = INADDR_ANY;
 
 	/* Bind socket to an address */
 	if(bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
@@ -54,6 +84,17 @@ int main(int argc, char **argv) {
 	/* Print before loop */
 	printf("Currently listening on port %d\n", portno);
 	
+	char* sql = "DROP TABLE IF EXISTS;"
+	            "CREATE TABLE USERS(Id INT Name TEXT);";
+	rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+	/*
+	if(rc != SQLITE_OK) {
+		error("SQL error");
+		sqlite3_free(err_msg);
+		sqlite3_close(db);
+	}
+	*/
+
 	/* Implement I/O multiplexing for input */
 	while(TRUE) {
 		/* Initialize fdset */
@@ -82,13 +123,6 @@ int main(int argc, char **argv) {
 			} else {
 				fprintf(stderr, "\x1B[1;31mError: command does not exist\x1B[0m\n");
 			}
-			/*
-			switch(buffer[0]) {
-				case '/':
-					
-				default:
-					fprintf(stderr, "\x1B[1;31mError: command does not exist\x1B[0m\n");
-			}*/
 		}
 
 		/* Accept connection and spawn login thread */
@@ -115,12 +149,32 @@ int main(int argc, char **argv) {
 			if(write(connfd, buffer, MAX_LEN) < 0) {
 				printError("unable to write to client socket");
       }
+
+			/*
+			hostinfo = gethostbyaddr((const char*) &cli_addr.sin_addr.s_addr, sizeof(cli_addr.sin_addr.s_addr), AF_INET);
+			if(hostinfo == NULL)
+				error("gethostbyaddr");
+			hostaddrp = inet_ntoa(cli_addr.sin_addr);
+			if(hostaddrp == NULL)
+				error("inet_ntoa");
+			printf("%s, %s\n", hostinfo->h_name, hostaddrp);
+			*/
+
+			pthread_create(&thread, 0, (void*)&handler, (void*) &connfd);
+
+			/* Write message of the day to client */
+      if(write(connfd, motd, strlen(motd)) < 0) {
+        printError("unable to write message of the day");
+      }
 			//TODO: Spawn a new thread to verify user name
 			close(connfd);
 		}
 	}
 
 	printf("Shutting down...\n");
+
+	sqlite3_finalize(res);
+	sqlite3_close(db);
 	close(listenfd);
 
 	return 0;
@@ -132,16 +186,31 @@ void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact
   }
 }
 
-void Socket(int domain, int type, int protocol) {
-  if(socket(domain, type, protocol) == -1) {
+int Socket(int domain, int type, int protocol) {
+  int fd;
+
+  if((fd = socket(domain, type, protocol)) == -1) {
     printError("ERROR: Unable to open a socket");
   }
+
+  return fd;
 }
 
 void Signal(int sig, void (*func)(int)) {
   if(signal(sig, func) == SIG_ERR) {
     printError("ERROR: Error on signal handler");
   }
+}
+
+void handler(void* incoming) {
+	socklen_t clilen;
+	int connfd;
+	struct sockaddr_in cli_addr;
+	/* Store client socket descriptor */
+	connfd = *((int*) incoming);
+	clilen = sizeof(cli_addr);
+
+	getpeername(connfd, (struct sockaddr*) &cli_addr, &clilen);
 }
 
 void printUsage() {
