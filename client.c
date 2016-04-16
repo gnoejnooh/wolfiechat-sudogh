@@ -2,12 +2,15 @@
 
 int main(int argc, char* argv[]) {
 
+  int rc;
   int listenfd;
   char portno[MAX_LEN];
   char addr[MAX_LEN];
   char name[MAX_LEN];
   char buffer[MAX_LEN];
-
+  struct addrinfo hints;
+  struct addrinfo *servinfo;
+  fd_set input;
   //struct sockaddr_in serv_addr;
   //struct hostent *server;
   /*
@@ -20,13 +23,13 @@ int main(int argc, char* argv[]) {
       #define h_addr  h_addr_list[0]  // address, for backward compatiblity
       };
   */
-      
-  struct addrinfo hints;
-  struct addrinfo *servinfo;
-
   parseOption(argc, argv, name, addr, portno);
 
   listenfd = socket(AF_INET, SOCK_STREAM, 0);
+  if(listenfd < 0) {
+    printError("cannot open socket");
+    exit(-1);
+  }
   
   /* Modify addrinfo hint struct */
   memset(&hints, 0, sizeof(hints));
@@ -47,25 +50,82 @@ int main(int argc, char* argv[]) {
     struct addrinfo  *ai_next; // next structure in linked list
   };
   */
-  //server = gethostbyname(servinfo->ai_canonname);
-  //bzero((char*) &serv_addr, sizeof(serv_addr));
-  //serv_addr.sin_family = AF_INET;
-  //bcopy((char*) server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
-  //serv_addr.sin_port = htons(atoi(portno));
   /* Establish a connection */
-  //connect(listenfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr));
-  connect(listenfd, servinfo->ai_addr, servinfo->ai_addrlen);
-  /* Read welcome message from the server */
-  read(listenfd, buffer, MAX_LEN);
-  printf("%s\n", buffer);
-  /* Send message to the server */
-  printf("%s: ", name);
+  rc = connect(listenfd, servinfo->ai_addr, servinfo->ai_addrlen);
+  if(rc < 0) {
+    printError("cannot connect");
+    exit(1);
+  }
   bzero(buffer, MAX_LEN);
-  fgets(buffer, MAX_LEN, stdin);
-  write(listenfd, buffer, strlen(buffer));
+  rc = write(listenfd, "WOLFIE\r\n\r\n", 10);
+  if(rc < 0) {
+    printError("unable to write WOLFIE protocol");
+  }
+  /*
+  rc = read(sockfd, "EIFLOW\r\n\r\n", 10);
+  if(rc < 0) {
+    printError("unable to read EIFLOW protocol");
+  }
+
+  write(sockfd, "IAM ", 4);
+  write(sockfd, name, MAX_LEN);
+  write(sockfd, "\r\n\r\n", 4);
+
+  read(sockfd, buffer, MAX_LEN);
+  if(buffer[0] != 'H') {
+    printError("User already logged in");
+  }
+  printf("%s\n", buffer);
+  printf("Logged in SUCCESSFULLY");
+  
+  read(sockfd, buffer, MAX_LEN);
+  printf("%s\n", buffer);
+  */
+  FD_ZERO(&input);
+  FD_SET(listenfd, &input);
+  FD_SET(fileno(stdin), &input);
+  
+  while(TRUE) {
+    printf("%s> ", name);
+    fflush(stdout);
+
+    if(select(1, &input, 0, 0, 0) < 0) {
+      printError("something went wrong with select");
+    }
+
+    if(FD_ISSET(fileno(stdin), &input)) {
+      bzero(buffer, MAX_LEN);
+      fgets(buffer, MAX_LEN, stdin);
+      if(!strcmp(buffer, "/time\n")) {
+        printf("Connected for %d hour(s) %d minute(s), and %d second(s)\n", 0, 0, 0);
+      } else if(!strcmp(buffer, "/help\n")) {
+        printUsage();
+      } else if(!strcmp(buffer, "/logout\n")) {
+        break;
+      } else if(!strcmp(buffer, "/listu\n")) {
+        printf("Should send request to server\n");
+      } else {
+        fprintf(stderr, "\x1B[1;31mError: command does not exist\x1B[0m\n");
+      }
+    }
+
+    if(FD_ISSET(listenfd, &input)) {
+      rc = recv(listenfd, buffer, sizeof(buffer), 0);
+      buffer[rc] = '\0';
+      printf("%s\n", buffer);
+      fflush(stdout);
+    }
+  }
+
   /* Free the linked list */
   freeaddrinfo(servinfo);
+  printf("Logged out successfully...\n");
   return 0;
+}
+
+void printError(const char *msg) {
+  fprintf(stderr, "\x1B[1;31mError: %s\n", msg);
+  exit(1);
 }
 
 void printUsage() {
@@ -75,7 +135,7 @@ void printUsage() {
   fprintf(stderr, "-v           Verbose print all incoming and outgoing protocol verbs & content.\n");
   fprintf(stderr, "NAME         This is the username to display when chatting\n");
   fprintf(stderr, "SERVER_IP    The ipaddress of the server to connect to\n");
-  fprintf(stderr, "SERVER_PORT  The port to connect to");
+  fprintf(stderr, "SERVER_PORT  The port to connect to\n");
 }
 
 void parseOption(int argc, char **argv, char *name, char *addr, char *portno) {
