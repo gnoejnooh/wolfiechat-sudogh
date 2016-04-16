@@ -13,6 +13,7 @@
 #include <netdb.h>      /* struct hostent */
 #include <pthread.h>
 #include <sqlite3.h>
+#include <time.h>
 
 #define TRUE    		1
 #define FALSE   		0

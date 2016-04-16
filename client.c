@@ -8,6 +8,7 @@ int main(int argc, char* argv[]) {
   char addr[MAX_LEN];
   char name[MAX_LEN];
   char buffer[MAX_LEN];
+  char buf_in[MAX_LEN];
   struct addrinfo hints;
   struct addrinfo *servinfo;
   fd_set input;
@@ -70,8 +71,6 @@ int main(int argc, char* argv[]) {
   }
   strip_crnl(buffer);
   printf("%s\n", buffer);
-
-  
   
   while(TRUE) {
     FD_ZERO(&input);
@@ -89,11 +88,17 @@ int main(int argc, char* argv[]) {
       bzero(buffer, MAX_LEN);
       fgets(buffer, MAX_LEN, stdin);
       if(!strcmp(buffer, "/time\n")) {
-        printf("Connected for %d hour(s) %d minute(s), and %d second(s)\n", 0, 0, 0);
+        rc = write(listenfd, "TIME\r\n\r\n", 8);
+        if(rc < 0) {
+          printError("unable to write TIME");
+        }
       } else if(!strcmp(buffer, "/help\n")) {
         printUsage();
       } else if(!strcmp(buffer, "/logout\n")) {
-        break;
+        rc = write(listenfd, "BYE\r\n\r\n", 8);
+        if(rc < 0) {
+          printError("unable to write BYE");
+        }
       } else if(!strcmp(buffer, "/listu\n")) {
         printf("Should send request to server\n");
       } else {
@@ -102,10 +107,24 @@ int main(int argc, char* argv[]) {
     }
     else {
     //if(FD_ISSET(listenfd, &input)) {
-      rc = read(listenfd, buffer, sizeof(buffer));
-      strip_crnl(buffer);
-      printf("%s\n", buffer);
-      fflush(stdout);
+      rc = read(listenfd, buf_in, sizeof(buf_in));
+      strip_crnl(buf_in);
+
+      if(!strlen(buf_in)) {
+        continue;
+      }
+      char* verb;
+      //char* arg;
+      verb = strtok(buf_in, " ");
+
+      if(!strcmp(verb, "BYE")) {
+        break;
+      } else if(!strcmp(verb, "MOTD")) {
+        printf("%s\n", strtok(NULL, " "));
+      } else if(!strcmp(verb, "EMIT")) {
+        unsigned long t = atoi(strtok(NULL, " "));
+        printf("Connected for %d hour(s) %d minute(s), and %d second(s)\n", (int)t/3600, (int)(t%3600)/60, (int)(t%3600)%60);
+      }
     }
   }
 

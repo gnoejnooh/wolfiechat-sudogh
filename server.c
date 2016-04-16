@@ -135,6 +135,10 @@ int main(int argc, char **argv) {
 				printf("unable to write login protocol\n");
 		  }
 
+		  bzero(buf_out, sizeof(buf_out));
+		  sprintf(buf_out, "MOTD %s\r\n\r\n", motd);
+		  write(connfd, buf_out, sizeof(buf_out));
+
 			pthread_create(&tid, 0, (void*)&handler, (void*) &connfd);
 		}
 	}
@@ -210,14 +214,36 @@ void Sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt *
 
 void handler(void* incoming) {
 	//socklen_t clilen;
+	int n;
 	int connfd;
-	//char buf_in[MAX_LEN];
-	//char buf_out[MAX_LEN];
-	//struct sockaddr_in cli_addr;
-	/* Store client socket descriptor */
 	connfd = *((int*) incoming);
-	//clilen = sizeof(cli_addr);
-	write(connfd, "~Logged in SUCCESSFULLY~\n", 25);
+	time_t t = time(NULL);
+	char buf_in[MAX_LEN];
+	char buf_out[MAX_LEN];
+
+	while((n = read(connfd, buf_in, sizeof(buf_in))) > 0) {
+		buf_in[n] = '\0';
+		buf_out[0] = '\0';
+
+		if(!strlen(buf_in)) {
+			continue;
+		}
+		if(!strcmp(buf_in, "BYE\r\n\r\n")) {
+			if(write(connfd, "BYE\r\n\r\n", 7) < 0) {
+				printError("unable to write BYE protocol");
+  		}
+			break;
+		} else if(!strcmp(buf_in, "TIME\r\n\r\n")) {
+			time_t current = time(NULL);
+			current = current - t;
+			sprintf(buf_out, "EMIT %ld\r\n\r\n", current);
+			if(write(connfd, buf_out, sizeof(buf_out)) < 0) {
+				printError("unable to write EMIT protocol");
+  		}
+		}
+
+	}
+	close(connfd);
 	
 }
 
