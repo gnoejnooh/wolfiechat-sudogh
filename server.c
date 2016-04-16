@@ -1,5 +1,12 @@
 #include "server.h"
-
+/*
+typedef struct {
+	struct sockaddr_in addr;
+	int fd;
+	int id;
+	char name[]
+}
+*/
 int main(int argc, char **argv) {
 
 	int sockfd;
@@ -10,12 +17,35 @@ int main(int argc, char **argv) {
 	socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr;
 	
+  //struct hostent *hostinfo;
+	//char* hostaddrp;
+	pthread_t thread;
+
   char motd[MAX_LEN];
 	char buffer[MAX_LEN];
 	
 	struct sigaction sa;
 	sa.sa_handler = &sigHandler;
 	sa.sa_flags = SA_RESTART;
+
+	sqlite3 *db;
+	sqlite3_stmt *res;
+	char* err_msg = 0;
+
+	/* Open database */
+	int rc = sqlite3_open("usrinfo", &db);
+	if(rc != SQLITE_OK) {
+		error("Cannot open database");
+		sqlite3_close(db);
+	}
+	/* Prepare database */
+	rc = sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
+	if(rc != SQLITE_OK) {
+		error("Failed to fetch data");
+		sqlite3_close(db);
+	}
+
+	rc = sqlite3_step(res);
 
 	if(sigaction(SIGINT, &sa, NULL) == -1) {
 		printError("cannot handle SIGINT\n");
@@ -61,6 +91,17 @@ int main(int argc, char **argv) {
 	/* Print before loop */
 	printf("Currently listening on port %d\n", portno);
 	
+	char* sql = "DROP TABLE IF EXISTS;"
+	            "CREATE TABLE USERS(Id INT Name TEXT);";
+	rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+	/*
+	if(rc != SQLITE_OK) {
+		error("SQL error");
+		sqlite3_free(err_msg);
+		sqlite3_close(db);
+	}
+	*/
+
 	/* Implement I/O multiplexing for input */
 	while(TRUE) {
 		/* Initialize fdset */
@@ -89,13 +130,6 @@ int main(int argc, char **argv) {
 			} else {
 				fprintf(stderr, "\x1B[1;31mError: command does not exist\x1B[0m\n");
 			}
-			/*
-			switch(buffer[0]) {
-				case '/':
-					
-				default:
-					fprintf(stderr, "\x1B[1;31mError: command does not exist\x1B[0m\n");
-			}*/
 		}
 
 		/* Accept connection and spawn login thread */
@@ -104,24 +138,50 @@ int main(int argc, char **argv) {
 			cli_sockfd = accept(sockfd, (struct sockaddr*) &cli_addr, &clilen);
 			if(cli_sockfd < 0)
 				printError("unable to accept connection");
-			/* Write message of the day to client */
-			if(write(cli_sockfd, motd, strlen(motd)) < 0)
-				printError("unable to write message of the day");
 			/* Initialize buffer and echo client's msg */
 			bzero(buffer, MAX_LEN);
 			if(read(cli_sockfd, buffer, MAX_LEN) < 0)
 				printError("unable to read from client socket");
 			if(write(cli_sockfd, buffer, MAX_LEN) < 0)
 				printError("unable to write to client socket");
+			/*
+			hostinfo = gethostbyaddr((const char*) &cli_addr.sin_addr.s_addr, sizeof(cli_addr.sin_addr.s_addr), AF_INET);
+			if(hostinfo == NULL)
+				error("gethostbyaddr");
+			hostaddrp = inet_ntoa(cli_addr.sin_addr);
+			if(hostaddrp == NULL)
+				error("inet_ntoa");
+			printf("%s, %s\n", hostinfo->h_name, hostaddrp);
+			*/
+
+			pthread_create(&thread, 0, (void*)&handler, (void*) &cli_sockfd);
+			/* Write message of the day to client */
+			if(write(cli_sockfd, motd, strlen(motd)) < 0)
+				error("unable to write message of the day");
+			
 			//TODO: Spawn a new thread to verify user name
 			close(cli_sockfd);
 		}
 	}
 
 	printf("Shutting down...\n");
+	sqlite3_finalize(res);
+	sqlite3_close(db);
 	close(sockfd);
 
 	return 0;
+}
+
+void handler(void* incoming) {
+	socklen_t clilen;
+	int cli_sockfd;
+	struct sockaddr_in cli_addr;
+	/* Store client socket descriptor */
+	cli_sockfd = *((int*) incoming);
+	clilen = sizeof(cli_addr);
+
+	getpeername(cli_sockfd, (struct sockaddr*) &cli_addr, &clilen);
+	
 }
 
 void printUsage() {
