@@ -106,7 +106,6 @@ int main(int argc, char* argv[]) {
       }
     }
     else {
-    //if(FD_ISSET(listenfd, &input)) {
       rc = read(listenfd, buf_in, sizeof(buf_in));
       strip_crnl(buf_in);
 
@@ -114,7 +113,6 @@ int main(int argc, char* argv[]) {
         continue;
       }
       char* verb;
-      //char* arg;
       verb = strtok(buf_in, " ");
 
       if(!strcmp(verb, "BYE")) {
@@ -137,7 +135,7 @@ int main(int argc, char* argv[]) {
 void strip_crnl(char* str) {
   while(*str != '\0') {
     if(*str == '\r' || *str == '\n') {
-      *str = '\0';
+      *str = ' ';
     }
     str++;
   }

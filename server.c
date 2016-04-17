@@ -3,97 +3,62 @@
 int main(int argc, char **argv) {
 
 	int listenfd;
+	int epollfd;
   int connfd;
-	int portno;
-
-	fd_set input;
-	socklen_t clilen;
-  struct sockaddr_in serv_addr, cli_addr;
-	
+	int VB = 0;
+	int rc;
+	char portno[65535];
 	pthread_t tid;
-
   char motd[MAX_LEN];
 	char buffer[MAX_LEN];
-	char buf_in[MAX_LEN];
-	char buf_out[MAX_LEN];
-	char name[MAX_LEN];
-	
+	param_t param;
+	struct epoll_event event;
+
 	struct sigaction sa;
-
-	sqlite3 *db = NULL;
-	sqlite3_stmt *res = NULL;
-	char* err_msg = NULL;
-
   sa.sa_handler = &sigHandler;
   sa.sa_flags = SA_RESTART;
-
   Sigaction(SIGINT, &sa, NULL);
   Signal(SIGINT, sigHandler);
 
-	/* Open and prepare database */
-  initializeDatabase(db, res, err_msg);
-
-	parseOption(argc, argv, &portno, motd);
-
-  /* Create new socket */
-  listenfd = Socket(AF_INET, SOCK_STREAM, 0);  
-
-  /*
-   * struct sockaddr_in {
-   *   uint16_t          sin_family;
-   *   uint16_t          sin_port;
-   *   struct in_addr    sin_addr;
-   *   unsigned char     sin_zero[8];
-   * };
-   */
-
-  /* Set buffer to zero */
-  bzero((char*) &serv_addr, sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(portno);
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-
-	/* Bind socket to an address */
-	Bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
-
+	VB = parseOption(argc, argv, portno, motd);
+	listenfd = create_and_bind(portno);
+  
 	/* Listen on the socket for connection */
-	listen(listenfd, 5);
-
-	/* Get client address length */
-	clilen = sizeof(cli_addr);
-
-	/* Print before loop */
-	printf("Currently listening on port %d\n", portno);
-	
-	char* sql = "DROP TABLE IF EXISTS;"
-	            "CREATE TABLE USERS(ID INT NAME TEXT);";
-	
-  sqlite3_exec(db, sql, 0, 0, &err_msg);
-	/*
-	if(rc != SQLITE_OK) {
-		error("SQL error");
-		sqlite3_free(err_msg);
-		sqlite3_close(db);
+	rc = listen(listenfd, 10);
+	if(rc < 0) {
+		printError("error in listen");
 	}
-	*/
+	/* Print before loop */
+	printf("Currently listening on port %s\n", portno);
+	/* Create epoll */
+	epollfd = epoll_create1(0);
+	if(rc < 0) {
+		printError("error while creating epoll");
+	}
+	/* Add stdin */
+	event.data.fd = fileno(stdin);
+	event.events = EPOLLIN | EPOLLET;
+	rc = epoll_ctl(epollfd, EPOLL_CTL_ADD, fileno(stdin), &event);
+	if(rc < 0) {
+		printError("epoll_ctl error");
+	}
+	/* Add socket */
+	event.data.fd = listenfd;
+	event.events = EPOLLIN | EPOLLET;
+	rc = epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &event);
+	if(rc < 0) {
+		printError("epoll_ctl error");
+	}
 
-	/* Implement I/O multiplexing for input */
 	while(TRUE) {
-		/* Initialize fdset */
-		FD_ZERO(&input);
-		FD_SET(listenfd, &input);
-		FD_SET(fileno(stdin), &input);
-
-		/* Use select() to determine which fd is used */
-		if(select(listenfd+1, &input, 0, 0, 0) < 0) {
-			printError("something went wrong with select");
-    }
-
-		/* Handle user command */
-		if(FD_ISSET(fileno(stdin), &input)) {
-      printf("server> ");
+		int nfds;
+		nfds = epoll_wait(epollfd, &event, 1, -1);
+		if(nfds < 0) {
+			printError("epoll_wait failed");
+		}
+		if(event.data.fd == fileno(stdin)) {
+			printf("server> ");
       fflush(stdout);
-
 			bzero(buffer, MAX_LEN);
 			fgets(buffer, MAX_LEN, stdin);
 			if(!strcmp(buffer, "/users\n")) {
@@ -105,95 +70,154 @@ int main(int argc, char **argv) {
 			} else {
 				fprintf(stderr, "\x1B[1;31mERROR: command does not exist\x1B[0m\n");
 			}
-		}
-
-		/* Accept connection and spawn login thread */
-		if(FD_ISSET(listenfd, &input)) {
-			/* Block process until a client connects to the server- */
+		} else if(event.data.fd == listenfd) {
+			struct sockaddr_in cli_addr;
+			socklen_t clilen = sizeof(cli_addr);
 			connfd = accept(listenfd, (struct sockaddr*) &cli_addr, &clilen);
-
-			if(connfd < 0) {
-				printError("unable to accept connection");
-      }
-      wolfieProtocol(connfd);
-      bzero(buf_in, sizeof(buf_in));
-			if(read(connfd, buf_in, sizeof(buf_in)) < 0) {
-				printf("unable to read login protocol\n");
-		  }
-		  /* Check if the user name is taken */
-		  while(sqlite3_step(res) == SQLITE_ROW) {
-		  	if(!strcmp((char*)sqlite3_column_text(res, 1), buf_in)) {
-		  		printf("send ERR 00 USER NAME TAKEN to client");
-		  	}
-		  }
-		  /* Add new user name to database */
-		  char* query = sqlite3_mprintf("INSERT INTO USERS (ID,NAME) VALUES (1, %q);", name);
-		  sqlite3_exec(db, query, 0, 0, &err_msg);
-		  strncpy(name, buf_in+4, strlen(buf_in)); 
-		  sprintf(buf_out, "HI %s\r\n\r\n", name);
-		  if(write(connfd, buf_out, sizeof(buf_out)) < 0) {
-				printf("unable to write login protocol\n");
-		  }
-
-		  bzero(buf_out, sizeof(buf_out));
-		  sprintf(buf_out, "MOTD %s\r\n\r\n", motd);
-		  write(connfd, buf_out, sizeof(buf_out));
-
-			pthread_create(&tid, 0, (void*)&handler, (void*) &connfd);
+			param.VB = VB;
+			param.connfd = connfd;
+			param.motd = motd;
+			pthread_create(&tid, 0, (void*)&login_handler, (void*) &param);
+		} else {
+			printError("fd error");
 		}
 	}
-
 	printf("Shutting down...\n");
-
-	sqlite3_finalize(res);
-	sqlite3_close(db);
+	close(epollfd);
 	close(listenfd);
 
 	return 0;
 }
 
-void wolfieProtocol(int connfd) {
-	char buffer[10];
-	/* Read WOLFIE protocol */
-  bzero(buffer, sizeof(buffer));
-	if(read(connfd, buffer, sizeof(buffer)) < 0) {
-		printf("unable to read WOLFIE protocol\n");
+int create_and_bind(char* port) {
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+	int rc, listenfd;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+	rc = getaddrinfo(NULL, port, &hints, &result);
+	if(rc < 0) {
+		printError("getaddrinfo error");
+	}
+	for(rp = result; rp != NULL; rp = rp->ai_next) {
+		listenfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		if(listenfd < 0) continue;
+		rc = bind(listenfd, rp->ai_addr, rp->ai_addrlen);
+		if(rc == 0) break;
+		close(listenfd);
+	}
+	if(rp == NULL) {
+		printError("bind error");
+	}
+	freeaddrinfo(result);
+	return listenfd;
+}
+
+void login_handler(void* incoming) {
+	param_t *login_param = (param_t*) incoming;
+	int connfd = login_param->connfd;
+	int VB = login_param->VB;
+	char buf_in[MAX_LEN];
+	char buf_out[MAX_LEN];
+	char* name = NULL;
+	pthread_t tid;
+
+  wolfieProtocol(connfd, VB);
+  bzero(buf_in, sizeof(buf_in));
+	read(connfd, buf_in, sizeof(buf_in));
+	strip_crnl(buf_in);
+	if(VB) {
+		printVerbose(buf_in, INCOMING);
+	}
+	if(!strcmp(strtok(buf_in, " "), "IAM")) {
+		name = strtok(NULL, " ");
+	}
+	//TODO: verify user name; reject if used
+  sprintf(buf_out, "HI %s\r\n\r\n", name);
+  write(connfd, buf_out, sizeof(buf_out));
+  if(VB) {
+		printVerbose(buf_out, OUTGOING);
+	}
+  bzero(buf_out, sizeof(buf_out));
+  sprintf(buf_out, "MOTD %s\r\n\r\n", login_param->motd);
+  write(connfd, buf_out, sizeof(buf_out));
+  if(VB) {
+		printVerbose(buf_out, OUTGOING);
+	}
+	pthread_create(&tid, 0, (void*)&handler, (void*) &login_param);
+}
+
+void handler(void* incoming) {
+	param_t *comm_param = (param_t*) incoming;
+	int n;
+	int connfd = comm_param->connfd;
+	int VB = comm_param->VB;
+	time_t t = time(NULL);
+	char buf_in[MAX_LEN];
+	char buf_out[MAX_LEN];
+
+
+	while((n = read(connfd, buf_in, sizeof(buf_in))) > 0) {
+		buf_in[n] = '\0';
+		buf_out[0] = '\0';
+
+		if(!strlen(buf_in)) {
+			continue;
+		}
+		if(VB) {
+  		printVerbose(buf_in, INCOMING);
+  	}
+		if(!strcmp(buf_in, "BYE\r\n\r\n")) {
+			if(write(connfd, "BYE\r\n\r\n", 7) < 0) {
+				printError("unable to write BYE protocol");
+  		}
+			break;
+		} else if(!strcmp(buf_in, "TIME\r\n\r\n")) {
+			time_t current = time(NULL);
+			current = current - t;
+			sprintf(buf_out, "EMIT %ld\r\n\r\n", current);
+			if(write(connfd, buf_out, sizeof(buf_out)) < 0) {
+				printError("unable to write EMIT protocol");
+  		}
+		}
+	}
+	close(connfd);	
+}
+
+void strip_crnl(char* str) {
+  while(*str != '\0') {
+    if(*str == '\r' || *str == '\n') {
+      *str = ' ';
+    }
+    str++;
   }
-  if(strcmp(buffer, "WOLFIE\r\n\r\n")) {
+}
+
+void wolfieProtocol(int connfd, int VB) {
+	char buffer[MAX_LEN];
+	char wolfie[10] = {'W', 'O', 'L', 'F', 'I', 'E', '\r', '\n', '\r', '\n'};
+	char eiflow[10] = {'E', 'I', 'F', 'L', 'O', 'W', '\r', '\n', '\r', '\n'};
+	/* Read WOLFIE protocol */
+	read(connfd, buffer, sizeof(buffer));
+  if(strcmp(buffer, wolfie)) {
   	printError("protocol does not match");
   }
-
-  if(write(connfd, "EIFLOW\r\n\r\n", 10) < 0) {
-		printError("unable to write EIFLOW protocol");
-  }
+  if(VB) {
+  	printVerbose(buffer, INCOMING);
+	}
+  write(connfd, eiflow, sizeof(eiflow));
+  if(VB) {
+  	printVerbose(buffer, OUTGOING);
+	}
 }
 
-void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
-  if(sigaction(signum, act, oldact) == -1) {
-    printError("ERROR: Cannot handle SIGINT");
-  }
-}
-
-int Socket(int domain, int type, int protocol) {
-  int fd;
-
-  if((fd = socket(domain, type, protocol)) == -1) {
-    printError("ERROR: Unable to open a socket");
-  }
-
-  return fd;
-}
-
-void Signal(int sig, void (*func)(int)) {
-  if(signal(sig, func) == SIG_ERR) {
-    printError("ERROR: Error on signal handler");
-  }
-}
-
-void Bind(int socket, const struct sockaddr *address, socklen_t address_len) {
-  if(bind(socket, address, address_len) == -1) {
-    printError("ERROR: Unable to bind");
-  }
+void initializeDatabase(sqlite3 *db, sqlite3_stmt *res, char *err_msg) {
+  Sqlite3_open("usrinfo.db", &db);
+  Sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
+  sqlite3_step(res);
 }
 
 void Sqlite3_open(const char *filename, sqlite3 **ppDb) {
@@ -212,41 +236,6 @@ void Sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt *
   }
 }
 
-void handler(void* incoming) {
-	//socklen_t clilen;
-	int n;
-	int connfd;
-	connfd = *((int*) incoming);
-	time_t t = time(NULL);
-	char buf_in[MAX_LEN];
-	char buf_out[MAX_LEN];
-
-	while((n = read(connfd, buf_in, sizeof(buf_in))) > 0) {
-		buf_in[n] = '\0';
-		buf_out[0] = '\0';
-
-		if(!strlen(buf_in)) {
-			continue;
-		}
-		if(!strcmp(buf_in, "BYE\r\n\r\n")) {
-			if(write(connfd, "BYE\r\n\r\n", 7) < 0) {
-				printError("unable to write BYE protocol");
-  		}
-			break;
-		} else if(!strcmp(buf_in, "TIME\r\n\r\n")) {
-			time_t current = time(NULL);
-			current = current - t;
-			sprintf(buf_out, "EMIT %ld\r\n\r\n", current);
-			if(write(connfd, buf_out, sizeof(buf_out)) < 0) {
-				printError("unable to write EMIT protocol");
-  		}
-		}
-
-	}
-	close(connfd);
-	
-}
-
 void printUsage() {
   fprintf(stderr, "USAGE: [-h|-v] PORT_NUMBER MOTD\n");
   fprintf(stderr, "-h           Displays help menu & returns EXIT_SUCCESS.\n");
@@ -260,6 +249,33 @@ void printError(const char *msg) {
   exit(1);
 }
 
+void printVerbose(char *msg, int flag) {
+	char buffer[MAX_LEN];
+	char* end;
+	strip_crnl(msg);
+	end = msg + strlen(msg) - 1;
+	while(end > msg && isspace(*end)) end--;
+	*(end+1) = 0;
+	if(!flag) {
+		sprintf(buffer, "Incoming: %s", msg);
+	} else {
+		sprintf(buffer, "Outgoing: %s", msg);
+	}
+	fprintf(stdout, "\x1B[1;34m%s\x1B[0m\n", buffer);
+}
+
+void Signal(int sig, void (*func)(int)) {
+  if(signal(sig, func) == SIG_ERR) {
+    printError("ERROR: Error on signal handler");
+  }
+}
+
+void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
+  if(sigaction(signum, act, oldact) == -1) {
+    printError("ERROR: Cannot handle SIGINT");
+  }
+}
+
 void sigHandler(int signal) {
   if(signal == SIGINT) {
     printf("\nHandling SIGINT...\n");
@@ -267,15 +283,10 @@ void sigHandler(int signal) {
   }
 }
 
-void initializeDatabase(sqlite3 *db, sqlite3_stmt *res, char *err_msg) {
-  Sqlite3_open("usrinfo.db", &db);
-  Sqlite3_prepare_v2(db, "SELECT SQLITE_VERSION()", -1, &res, 0);
-  sqlite3_step(res);
-}
-
-void parseOption(int argc, char **argv, int *portno, char *motd) {
+int parseOption(int argc, char **argv, char *portno, char *motd) {
 
   int opt;
+  int verbose = 0;
 
   while((opt = getopt(argc, argv, "hv:")) != -1) {
     switch(opt) {
@@ -285,6 +296,7 @@ void parseOption(int argc, char **argv, int *portno, char *motd) {
       exit(EXIT_SUCCESS);
       break;
     case 'v':
+    	verbose = 1;
       break;
     case '?':
       /* Let this case fall down to default;
@@ -300,7 +312,7 @@ void parseOption(int argc, char **argv, int *portno, char *motd) {
   
   /* Get position arguments */
   if(argc == 3) {
-    *portno = atoi(argv[1]);
+    strcpy(portno, argv[1]);
     strcpy(motd, argv[2]);
   } else {
     if(argc == 1) {
@@ -313,4 +325,5 @@ void parseOption(int argc, char **argv, int *portno, char *motd) {
     printUsage();
     exit(EXIT_FAILURE);
   }
+  return verbose;
 }

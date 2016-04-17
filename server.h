@@ -14,10 +14,28 @@
 #include <pthread.h>
 #include <sqlite3.h>
 #include <time.h>
+#include <sys/epoll.h>
+#include <ctype.h>
 
 #define TRUE    		1
 #define FALSE   		0
+#define INCOMING    1
+#define OUTGOING    0
 #define MAX_LEN			1024
+#define MAX_EVENT   64
+
+typedef struct {
+  int isVerbose;
+  int connfd;
+  char name[MAX_LEN];
+  struct sockaddr_in addr;
+} client_t;
+
+typedef struct {
+  int VB;
+  int connfd;
+  char* motd;
+} param_t;
 
 void Sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
 void Signal(int sig, void (*func)(int));
@@ -29,14 +47,19 @@ void Sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt *
 
 void printUsage();
 void printError(const char *msg);
+void printVerbose(char *msg, int flag);
 
 void sigHandler(int signal);
 
 void initializeDatabase(sqlite3 *db, sqlite3_stmt *res, char *err_msg);
-void parseOption(int argc, char **argv, int *portno, char *motd);
+int parseOption(int argc, char **argv, char *portno, char *motd);
 
 void handler(void* incoming);
+void login_handler(void* incoming);
 
-void wolfieProtocol(int connfd);
+void wolfieProtocol(int connfd, int VB);
+void strip_crnl(char* str);
+
+int create_and_bind(char* port);
 
 #endif
