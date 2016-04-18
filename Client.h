@@ -19,6 +19,7 @@ int login(int clientfd, char *name, int verboseFlag);
 int executeCommand(int clientfd, int verboseFlag);
 
 void logout(int clientfd, int verboseFlag);
+void time(int clientfd, int verboseFlag);
 
 void printUsage();
 

@@ -4,7 +4,7 @@ void Send(int socket, const void *buffer, size_t length, int flags, int verboseF
 	char msg[MAX_LEN];
 	int n;
 	
-	if((n = send(socket, buffer, length, flags)) < 0) {
+	if((n = send(socket, buffer, length, flags)) < 5) {
 		return;
 	}
 
@@ -19,7 +19,7 @@ void Recv(int socket, void *buffer, size_t length, int flags, int verboseFlag) {
 	char msg[MAX_LEN];
 	int n;
 
-	if((n = recv(socket, buffer, length, flags)) < 0) {
+	if((n = recv(socket, buffer, length, flags)) < 5) {
 		return;
 	}
 

@@ -76,9 +76,9 @@ void parseOption(int argc, char **argv, char *name, char *hostname, char *port, 
 
   /* Get position arguments */
   if(optind < argc && (argc - optind) == 3) {
-    strcpy(name, argv[1]);
-    strcpy(hostname, argv[2]);
-    strcpy(port, argv[3]);
+    strcpy(name, argv[optind++]);
+    strcpy(hostname, argv[optind++]);
+    strcpy(port, argv[optind++]);
   } else {
     if((argc - optind) < 3) {
       printError("Missing arguments\n");
@@ -192,6 +192,11 @@ void logout(int clientfd, int verboseFlag) {
 
   Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0, verboseFlag);
   Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+}
+
+void time(int clientfd, int verboseFlag) {\
+
+  Send(clientfd, "TIME \r\n\r\n", strlen("TIME \r\n\r\n"), 0, verboseFlag);
 }
 
 void printUsage() {
