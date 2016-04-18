@@ -1,13 +1,16 @@
-CC = gcc
-CFLAG = -Wall -Werror -g
-
 all: server client
 
-server: server.c
-	$(CC) $(CFLAG) server.c -o server -pthread -lsqlite3
+User.o: User.c
+	gcc -Wall -Werror -c User.c
 
-client: client.c
-	$(CC) $(CFLAG) client.c -o client
+Wrapper.o: Wrapper.c
+	gcc -Wall -Werror -c Wrapper.c
+
+server: Server.c User.o Wrapper.o
+	gcc -Wall -Werror -pthread -o server Server.c User.o Wrapper.o
+
+client: Client.c Wrapper.o
+	gcc -Wall -Werror -o client Client.c Wrapper.o
 
 clean:
 	rm -f *~ *.o server client
