@@ -2,8 +2,12 @@
 
 void Send(int socket, const void *buffer, size_t length, int flags, int verboseFlag) {
 	char msg[MAX_LEN];
+	int n;
+	
+	if((n = send(socket, buffer, length, flags)) < 0) {
+		return;
+	}
 
-	send(socket, buffer, length, flags);
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
 		msg[strlen(msg)-5] = '\0';
@@ -13,8 +17,12 @@ void Send(int socket, const void *buffer, size_t length, int flags, int verboseF
 
 void Recv(int socket, void *buffer, size_t length, int flags, int verboseFlag) {
 	char msg[MAX_LEN];
+	int n;
 
-	recv(socket, buffer, length, flags);
+	if((n = recv(socket, buffer, length, flags)) < 0) {
+		return;
+	}
+
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
 		msg[strlen(msg)-5] = '\0';

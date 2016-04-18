@@ -3,21 +3,25 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 #include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include "Constant.h"
 #include "Wrapper.h"
 
-void parseOption(int argc, char **argv, char *name, char *hostname, char *portno, int *verboseFlag, int *userFlag);
+void parseOption(int argc, char **argv, char *name, char *hostname, char *port, int *verboseFlag);
 int openClientFd(char *hostname, char *port);
-int login(int clientfd, char *name, int verboseFlag, int userFlag);
-void executeCommand(int clinetfd, int verboseFlag);
+int login(int clientfd, char *name, int verboseFlag);
+int executeCommand(int clientfd, int verboseFlag);
 
-void wolfieProtocol(int listenfd);
-void strip_crnl(char* str);
+void logout(int clientfd, int verboseFlag);
 
 void printUsage();
+
 void printError(char *msg);
 
 #endif

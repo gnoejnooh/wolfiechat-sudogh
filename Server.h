@@ -29,6 +29,7 @@ typedef struct loginThreadParam {
 typedef struct communicationThreadParam {
 	int *connfd;
 	UserList *userList;
+	char *userName;
 	int verboseFlag;
 } CommunicationThreadParam;
 

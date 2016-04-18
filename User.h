@@ -22,6 +22,7 @@ typedef struct userList {
 
 void initializeUserList(UserList *userList);
 void insertUser(UserList *userList, char *userName);
+void deleteUser(UserList *userList, char *userName);
 void printAllUserInfo(UserList *userList);
 int isUserExist(UserList *userList, char *userName);
 void freeUserList(UserList *userList);

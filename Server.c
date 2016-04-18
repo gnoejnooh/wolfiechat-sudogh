@@ -201,15 +201,17 @@ void * loginThread(void *argv) {
   LoginThreadParam *param = (LoginThreadParam *)argv;
   pthread_t tid = param->tid;
   int connfd = *(param->connfd);
-  char *motd = param->motd;
+  char motd[MAX_LEN];
   UserList *userList = param->userList;
   int verboseFlag = param->verboseFlag;
+
+  strcpy(motd, param->motd);
 
   char buf[MAX_LEN];
   char userName[MAX_NAME_LEN];
 
   pthread_detach(pthread_self());
-  free(argv);
+  free(param->connfd);
 
   memset(buf, 0, MAX_LEN);
   Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
@@ -242,6 +244,7 @@ void * loginThread(void *argv) {
 
         communicationThreadParam->connfd = &connfd;
         communicationThreadParam->userList = userList;
+        communicationThreadParam->userName = userName;
         communicationThreadParam->verboseFlag = verboseFlag;
         pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
 
@@ -254,11 +257,11 @@ void * loginThread(void *argv) {
         Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
 
         printf("%s\n", buf);
+        close(connfd);
       }
     }
   }
-  
-  close(connfd);
+
   return NULL;
 }
 
@@ -266,7 +269,8 @@ void * communicationThread(void *argv) {
 
   CommunicationThreadParam *param = (CommunicationThreadParam *)argv;
   int connfd = *(param->connfd);
-  //UserList *userList = param->userList;
+  UserList *userList = param->userList;
+  char *userName = param->userName;
   int verboseFlag = param->verboseFlag;
 
   time_t begin = time(NULL);
@@ -274,16 +278,21 @@ void * communicationThread(void *argv) {
   char buf[MAX_LEN];
 
   pthread_detach(pthread_self());
-  free(argv);
 
-  memset(buf, 0, MAX_LEN);
-  Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
-
-  if(strcmp(buf, "TIME \r\n\r\n") == 0) {
-    time_t current = time(NULL);
+  while(TRUE) {
     memset(buf, 0, MAX_LEN);
-    sprintf(buf, "EMIT %ld\r\n\r\n", begin-current);
-    Send(connfd, buf, sizeof(buf), 0, verboseFlag);
+    Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
+
+    if(strcmp(buf, "TIME \r\n\r\n") == 0) {
+      time_t current = time(NULL);
+      memset(buf, 0, MAX_LEN);
+      sprintf(buf, "EMIT %ld\r\n\r\n", begin-current);
+      Send(connfd, buf, sizeof(buf), 0, verboseFlag);
+    } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
+      Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0, verboseFlag);
+      deleteUser(userList, userName);
+      break;
+    }
   }
 
   close(connfd);

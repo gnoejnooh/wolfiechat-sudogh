@@ -7,7 +7,6 @@ void initializeUserList(UserList *userList) {
 }
 
 void insertUser(UserList *userList, char *userName) {
-
 	User *user = malloc(sizeof(User));
 
 	strcpy(user->userName, userName);
@@ -25,6 +24,32 @@ void insertUser(UserList *userList, char *userName) {
 	}
 
 	(userList->count)++;
+}
+
+void deleteUser(UserList *userList, char *userName) {
+	User *cur = userList->head;
+	User *next = NULL;
+
+	int i;
+
+	for(i=0; i<userList->count; i++) {
+		next = cur->next;
+		if(strcmp(cur->userName, userName) == 0) {
+			User *prev = cur->prev;
+			if(prev != NULL) {
+				prev->next = next;
+				next->prev = prev;
+			} else {
+				userList->head = next;
+				if(next != NULL) {
+					userList->head->prev = NULL;
+				}	
+			}
+			(userList->count)--;
+			free(cur);
+		}
+		cur = next;
+	}
 }
 
 void printAllUserInfo(UserList *userList) {
