@@ -7,22 +7,30 @@
 #include <unistd.h>
 #include <errno.h>
 #include <netdb.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "Constant.h"
 #include "Wrapper.h"
 
-void parseOption(int argc, char **argv, char *name, char *hostname, char *port, int *verboseFlag);
-int openClientFd(char *hostname, char *port);
-int login(int clientfd, char *name, int verboseFlag);
-int executeCommand(int clientfd, int verboseFlag);
+int clientfd;
 
-void logout(int clientfd, int verboseFlag);
-void time(int clientfd, int verboseFlag);
+int runFlag;
+int verboseFlag;
+
+void parseOption(int argc, char **argv, char *name, char *hostname, char *port);
+int openClientFd(char *hostname, char *port);
+int login(char *name);
+void executeCommand();
+
+void logout();
+void time();
 
 void printUsage();
 
 void printError(char *msg);
+
+void sigintHandler(int signal);
 
 #endif

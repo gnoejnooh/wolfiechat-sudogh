@@ -51,8 +51,6 @@ void deleteUser(UserList *userList, char *userName) {
 
 	int i;
 
-	puts("TEST");
-
 	for(i=0; i<userList->count; i++) {
 		next = cur->next;
 		if(strcmp(cur->userName, userName) == 0) {
