@@ -6,8 +6,27 @@ void initializeUserList(UserList *userList) {
 	userList->count = 0;
 }
 
+void copyUserList(UserList *dst, UserList *src) {
+	User *cur = src->head;
+	User *next = NULL;
+
+	int i;
+
+	for(i=0; i<src->count; i++) {
+		next = cur->next;
+		insertUser(dst, cur->userName);
+		cur = next;
+	}
+}
+
 void insertUser(UserList *userList, char *userName) {
-	User *user = malloc(sizeof(User));
+	User *user;
+
+	if(isUserExist(userList, userName) == TRUE) {
+		return;
+	}
+
+	user = malloc(sizeof(User));
 
 	strcpy(user->userName, userName);
 
@@ -32,21 +51,31 @@ void deleteUser(UserList *userList, char *userName) {
 
 	int i;
 
+	puts("TEST");
+
 	for(i=0; i<userList->count; i++) {
 		next = cur->next;
 		if(strcmp(cur->userName, userName) == 0) {
 			User *prev = cur->prev;
 			if(prev != NULL) {
 				prev->next = next;
-				next->prev = prev;
-			} else {
-				userList->head = next;
-				if(next != NULL) {
-					userList->head->prev = NULL;
-				}	
 			}
+			
+			if(next != NULL) {
+				next->prev = prev;
+			}
+
+			if(cur == userList->head) {
+				userList->head = next;
+			}
+
+			if(cur == userList->tail) {
+				userList->tail = prev;
+			}
+
 			(userList->count)--;
 			free(cur);
+			return;
 		}
 		cur = next;
 	}

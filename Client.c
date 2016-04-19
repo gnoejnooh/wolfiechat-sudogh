@@ -1,8 +1,6 @@
 #include "Client.h"
 
 int main(int argc, char **argv) {
-  
-  int clientfd;
 
   char name[MAX_NAME_LEN];
   char hostname[MAX_HOSTNAME_LEN];
@@ -11,17 +9,19 @@ int main(int argc, char **argv) {
   fd_set readSet;
   fd_set readySet;
 
-  int runFlag = TRUE;
-  int verboseFlag = FALSE;
+  runFlag = TRUE;
+  verboseFlag = FALSE;
 
-  parseOption(argc, argv, name, hostname, port, &verboseFlag);
+  signal(SIGINT, sigintHandler);
+
+  parseOption(argc, argv, name, hostname, port);
 
   if((clientfd = openClientFd(hostname, port)) == -1) {
     printError("Failed to connect on server\n");
     exit(EXIT_FAILURE);
   }
 
-  if(login(clientfd, name, verboseFlag) == TRUE) {
+  if(login(name) == TRUE) {
     
     FD_ZERO(&readSet);
     FD_SET(STDIN, &readSet);
@@ -32,9 +32,7 @@ int main(int argc, char **argv) {
       select(clientfd+1, &readySet, NULL, NULL, NULL);
 
       if(FD_ISSET(STDIN, &readySet)) {
-        if((runFlag = executeCommand(clientfd, verboseFlag)) == FALSE) {
-          break;
-        }
+        executeCommand();
       }
 
       if(FD_ISSET(clientfd, &readySet)) {
@@ -50,7 +48,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void parseOption(int argc, char **argv, char *name, char *hostname, char *port, int *verboseFlag) {
+void parseOption(int argc, char **argv, char *name, char *hostname, char *port) {
 
   int opt;
 
@@ -64,7 +62,7 @@ void parseOption(int argc, char **argv, char *name, char *hostname, char *port, 
     case 'c':
       break;
     case 'v':
-      *verboseFlag = TRUE;
+      verboseFlag = TRUE;
       break;
     case '?':
     default:
@@ -95,7 +93,7 @@ int openClientFd(char *hostname, char *port) {
   struct addrinfo *list;
   struct addrinfo *cur;
 
-  int clientfd;
+  int fd;
 
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_socktype = SOCK_STREAM;
@@ -103,26 +101,26 @@ int openClientFd(char *hostname, char *port) {
   getaddrinfo(hostname, port, &hints, &list);
 
   for(cur=list; cur!=NULL; cur=cur->ai_next) {
-    if((clientfd = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol)) < 0) {
+    if((fd = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol)) < 0) {
       continue;
     }
 
-    if(connect(clientfd, cur->ai_addr, cur->ai_addrlen) != -1) {
+    if(connect(fd, cur->ai_addr, cur->ai_addrlen) != -1) {
       break;
     }
 
-    close(clientfd);
+    close(fd);
   }
 
   freeaddrinfo(list);
   if(cur == NULL) {
     return -1;
   } else {
-    return clientfd;
+    return fd;
   }
 }
 
-int login(int clientfd, char *name, int verboseFlag) {
+int login(char *name) {
   char buf[MAX_LEN];
   char motd[MAX_LEN];
 
@@ -164,9 +162,7 @@ int login(int clientfd, char *name, int verboseFlag) {
   return loginSucceed;
 }
 
-int executeCommand(int clientfd, int verboseFlag) {
-
-  int runFlag = TRUE;
+void executeCommand() {
   
   char buf[MAX_LEN];
   fgets(buf, MAX_LEN, stdin);
@@ -176,25 +172,23 @@ int executeCommand(int clientfd, int verboseFlag) {
   } else if(strcmp(buf, "/help\n") == 0) {
     printUsage();
   } else if(strcmp(buf, "/logout\n") == 0) {
-    logout(clientfd, verboseFlag);
+    logout();
     runFlag = FALSE;
   } else if(strcmp(buf, "/listu\n") == 0) {
     printError("Not implemented yet\n");
   } else {
     printError("Command does not exist\n");
   }
-
-  return runFlag;
 }
 
-void logout(int clientfd, int verboseFlag) {
+void logout() {
   char buf[MAX_LEN];
 
   Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0, verboseFlag);
   Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
 }
 
-void time(int clientfd, int verboseFlag) {\
+void time() {
 
   Send(clientfd, "TIME \r\n\r\n", strlen("TIME \r\n\r\n"), 0, verboseFlag);
 }
@@ -213,4 +207,9 @@ void printError(char *msg) {
   fprintf(stderr, "\x1B[1;31mERROR: ");
   fprintf(stderr, "%s", msg);
   fprintf(stderr, "\x1B[0m");
+}
+
+void sigintHandler(int signal) {
+  logout();
+  exit(EXIT_FAILURE);
 }

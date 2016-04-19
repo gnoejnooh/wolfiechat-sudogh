@@ -27,7 +27,6 @@ int main(int argc, char **argv) {
 
   connAddr = malloc(sizeof(struct sockaddr_in));
   userList = malloc(sizeof(UserList));
-  loginThreadParam = malloc(sizeof(LoginThreadParam));
 
   initializeUserList(userList);
 
@@ -57,10 +56,10 @@ int main(int argc, char **argv) {
 
     if(event.data.fd == listenfd) {
       connLen = sizeof(struct sockaddr_in);
+      loginThreadParam = malloc(sizeof(LoginThreadParam));
       connfd = malloc(sizeof(int));
     
       if((*connfd = accept(listenfd, (struct sockaddr *)connAddr, &connLen)) != -1) {
-        loginThreadParam->tid = tid;
         loginThreadParam->connfd = connfd;
         loginThreadParam->motd = motd;
         loginThreadParam->userList = userList;
@@ -199,19 +198,21 @@ void printError(char *msg) {
 
 void * loginThread(void *argv) {
   LoginThreadParam *param = (LoginThreadParam *)argv;
-  pthread_t tid = param->tid;
   int connfd = *(param->connfd);
   char motd[MAX_LEN];
   UserList *userList = param->userList;
   int verboseFlag = param->verboseFlag;
 
-  strcpy(motd, param->motd);
+  pthread_t tid;
 
   char buf[MAX_LEN];
   char userName[MAX_NAME_LEN];
 
+  strcpy(motd, param->motd);
+
   pthread_detach(pthread_self());
   free(param->connfd);
+  free(argv);
 
   memset(buf, 0, MAX_LEN);
   Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
