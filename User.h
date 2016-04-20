@@ -8,6 +8,7 @@
 
 typedef struct user {
 	char userName[MAX_NAME_LEN];
+	int connfd;
 
 	struct user *prev;
 	struct user *next;
@@ -21,10 +22,10 @@ typedef struct userList {
 } UserList;
 
 void initializeUserList(UserList *userList);
-void insertUser(UserList *userList, char *userName);
+void insertUser(UserList *userList, char *userName, int connfd);
 void deleteUser(UserList *userList, char *userName);
-void printAllUserInfo(UserList *userList);
-int isUserExist(UserList *userList, char *userName);
+void printAllUserInfo(UserList userList);
+int isUserExist(UserList userList, char *userName);
 void freeUserList(UserList *userList);
 
 #endif

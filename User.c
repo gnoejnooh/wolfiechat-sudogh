@@ -14,21 +14,22 @@ void copyUserList(UserList *dst, UserList *src) {
 
 	for(i=0; i<src->count; i++) {
 		next = cur->next;
-		insertUser(dst, cur->userName);
+		insertUser(dst, cur->userName, cur->connfd);
 		cur = next;
 	}
 }
 
-void insertUser(UserList *userList, char *userName) {
+void insertUser(UserList *userList, char *userName, int connfd) {
 	User *user;
 
-	if(isUserExist(userList, userName) == TRUE) {
+	if(isUserExist(*userList, userName) == TRUE) {
 		return;
 	}
 
 	user = malloc(sizeof(User));
 
 	strcpy(user->userName, userName);
+	user->connfd = connfd;
 
 	if(userList->count == 0) {
 		user->prev = NULL;
@@ -55,6 +56,7 @@ void deleteUser(UserList *userList, char *userName) {
 		next = cur->next;
 		if(strcmp(cur->userName, userName) == 0) {
 			User *prev = cur->prev;
+			
 			if(prev != NULL) {
 				prev->next = next;
 			}
@@ -79,26 +81,26 @@ void deleteUser(UserList *userList, char *userName) {
 	}
 }
 
-void printAllUserInfo(UserList *userList) {
-	User *cur = userList->head;
+void printAllUserInfo(UserList userList) {
+	User *cur = userList.head;
 	User *next = NULL;
 
 	int i;
 
-	for(i=0; i<userList->count; i++) {
+	for(i=0; i<userList.count; i++) {
 		next = cur->next;
 		printf("USER[%d]: %s\n", i+1, cur->userName);
 		cur = next;
 	}
 }
 
-int isUserExist(UserList *userList, char *userName) {
-	User *cur = userList->head;
+int isUserExist(UserList userList, char *userName) {
+	User *cur = userList.head;
 	User *next = NULL;
 
 	int i;
 
-	for(i=0; i<userList->count; i++) {
+	for(i=0; i<userList.count; i++) {
 		next = cur->next;
 		if(strcmp(cur->userName, userName) == 0) {
 			return TRUE;

@@ -9,26 +9,21 @@ int main(int argc, char **argv) {
   char port[MAX_PORT_LEN];
   char motd[MAX_LEN];
 
-  struct sockaddr_in *connAddr = NULL;
+  struct sockaddr_in *connAddr = malloc(sizeof(struct sockaddr_in));
   socklen_t connLen;
 
   struct epoll_event event;
 
-  pthread_t tid;
-
-  UserList *userList = NULL; 
+  pthread_t tid; 
 
   LoginThreadParam *loginThreadParam = NULL;
 
-  int verboseFlag = FALSE;
-  int runFlag = TRUE;
+  verboseFlag = FALSE;
+  runFlag = TRUE;
 
-  parseOption(argc, argv, port, motd, &verboseFlag);
+  parseOption(argc, argv, port, motd);
 
-  connAddr = malloc(sizeof(struct sockaddr_in));
-  userList = malloc(sizeof(UserList));
-
-  initializeUserList(userList);
+  initializeUserList(&userList);
 
   listenfd = openListenFd(port);
 
@@ -49,7 +44,9 @@ int main(int argc, char **argv) {
     epoll_wait(epollfd, &event, 1, -1);
 
     if(event.data.fd == STDIN) {
-      if((runFlag = executeCommand(userList)) == FALSE) {
+      executeCommand();
+
+      if(runFlag == FALSE) {
         break;
       }
     }
@@ -61,9 +58,7 @@ int main(int argc, char **argv) {
     
       if((*connfd = accept(listenfd, (struct sockaddr *)connAddr, &connLen)) != -1) {
         loginThreadParam->connfd = connfd;
-        loginThreadParam->motd = motd;
-        loginThreadParam->userList = userList;
-        loginThreadParam->verboseFlag = verboseFlag;
+        strcpy(loginThreadParam->motd, motd);
         pthread_create(&tid, NULL, loginThread, loginThreadParam);
       } else {
         free(connfd);
@@ -73,13 +68,11 @@ int main(int argc, char **argv) {
 
   close(listenfd);
   free(connAddr);
-  freeUserList(userList);
-  free(userList);
-  free(loginThreadParam);
+  freeUserList(&userList);
   return EXIT_SUCCESS;
 }
 
-void parseOption(int argc, char **argv, char *port, char *motd, int *verboseFlag) {
+void parseOption(int argc, char **argv, char *port, char *motd) {
 
   int opt;
 
@@ -90,7 +83,7 @@ void parseOption(int argc, char **argv, char *port, char *motd, int *verboseFlag
       exit(EXIT_SUCCESS);
       break;
     case 'v':
-      *verboseFlag = TRUE;
+      verboseFlag = TRUE;
       break;
     case '?':
     default:
@@ -157,9 +150,7 @@ int openListenFd(char *port) {
   return listenfd;
 }
 
-int executeCommand(UserList *userList) {
-
-  int runFlag = TRUE;
+void executeCommand() {
   
   char buf[MAX_LEN];
   fgets(buf, MAX_LEN, stdin);
@@ -169,12 +160,10 @@ int executeCommand(UserList *userList) {
   } else if(strcmp(buf, "/help\n") == 0) {
     printUsage();
   } else if(strcmp(buf, "/shutdown\n") == 0) {
-    runFlag = FALSE;
+    shutdownCommand();
   } else {
     printError("Command doesn't exist\n");
   }
-
-  return runFlag;
 }
 
 void printPrompt() {
@@ -200,8 +189,6 @@ void * loginThread(void *argv) {
   LoginThreadParam *param = (LoginThreadParam *)argv;
   int connfd = *(param->connfd);
   char motd[MAX_LEN];
-  UserList *userList = param->userList;
-  int verboseFlag = param->verboseFlag;
 
   pthread_t tid;
 
@@ -214,12 +201,10 @@ void * loginThread(void *argv) {
   free(param->connfd);
   free(argv);
 
-  memset(buf, 0, MAX_LEN);
   Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
 
   if(strcmp(buf, "WOLFIE \r\n\r\n") == 0) {
     Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0, verboseFlag);
-    memset(buf, 0, MAX_LEN);
     Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
 
     if(strncmp(buf, "IAM ", 4) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
@@ -231,22 +216,16 @@ void * loginThread(void *argv) {
         CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
         
         memset(buf, 0, MAX_LEN);
-        strcat(buf, "HI ");
-        strcat(buf, userName);
-        strcat(buf, " \r\n\r\n");
+        sprintf(buf, "HI %s \r\n\r\n", userName);
         Send(connfd, buf, strlen(buf), 0, verboseFlag);
-        insertUser(userList, userName);
+        insertUser(&userList, userName, connfd);
         
         memset(buf, 0, MAX_LEN);
-        strcat(buf, "MOTD ");
-        strcat(buf, motd);
-        strcat(buf, " \r\n\r\n");
+        sprintf(buf, "MOTD %s \r\n\r\n", motd);
         Send(connfd, buf, strlen(buf), 0, verboseFlag);
 
         communicationThreadParam->connfd = &connfd;
-        communicationThreadParam->userList = userList;
-        communicationThreadParam->userName = userName;
-        communicationThreadParam->verboseFlag = verboseFlag;
+        strcpy(communicationThreadParam->userName, userName);
         pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
 
       } else {
@@ -254,7 +233,6 @@ void * loginThread(void *argv) {
         Send(connfd, "ERR 00 USER NAME TAKEN \r\n\r\n", strlen("ERR 00 USER NAME TAKEN \r\n\r\n"), 0, verboseFlag);
         Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0, verboseFlag);
 
-        memset(buf, 0, MAX_LEN);
         Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
 
         printf("%s\n", buf);
@@ -270,28 +248,27 @@ void * communicationThread(void *argv) {
 
   CommunicationThreadParam *param = (CommunicationThreadParam *)argv;
   int connfd = *(param->connfd);
-  UserList *userList = param->userList;
-  char *userName = param->userName;
-  int verboseFlag = param->verboseFlag;
-
-  time_t begin = time(NULL);
+  char userName[MAX_NAME_LEN];
 
   char buf[MAX_LEN];
+  time_t begin = time(NULL);
+
+  strcpy(userName, param->userName);
 
   pthread_detach(pthread_self());
+  free(argv);
 
   while(TRUE) {
-    memset(buf, 0, MAX_LEN);
     Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
 
     if(strcmp(buf, "TIME \r\n\r\n") == 0) {
-      time_t current = time(NULL);
-      memset(buf, 0, MAX_LEN);
-      sprintf(buf, "EMIT %ld\r\n\r\n", begin-current);
-      Send(connfd, buf, sizeof(buf), 0, verboseFlag);
+      timeCommand(connfd, begin);
+    } else if(strcmp(buf, "LISTU \r\n\r\n") == 0) {
+      listuCommand(connfd);
     } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
       Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0, verboseFlag);
-      deleteUser(userList, userName);
+      printf("%s\n", userName);
+      deleteUser(&userList, userName);
       break;
     }
   }
@@ -299,4 +276,42 @@ void * communicationThread(void *argv) {
   close(connfd);
 
   return NULL;
+}
+
+void timeCommand(int connfd, time_t begin) {
+  char buf[MAX_LEN];
+  time_t current = time(NULL);
+
+  sprintf(buf, "EMIT %ld \r\n\r\n", current-begin);
+  Send(connfd, buf, sizeof(buf), 0, verboseFlag);
+}
+
+void listuCommand(int connfd) {
+  char buf[MAX_LISTU_LEN];
+
+  User *cur = userList.head;
+  memset(buf, 0, MAX_LISTU_LEN);
+
+  sprintf(buf, "UTSIL");
+
+  while(cur != NULL) {
+    sprintf(buf+strlen(buf), " %s \r\n", cur->userName);
+    cur = cur->next;
+  }
+
+  sprintf(buf+strlen(buf), "\r\n");
+  Send(connfd, buf, sizeof(buf), 0, verboseFlag);
+}
+
+void shutdownCommand() {
+  User *cur = userList.head;
+  int connfd;
+
+  while(cur != NULL) {
+    connfd = cur->connfd;
+    Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0, verboseFlag);
+    cur = cur->next;
+  }
+
+  runFlag = FALSE;
 }

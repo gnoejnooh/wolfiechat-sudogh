@@ -19,6 +19,8 @@ void Recv(int socket, void *buffer, size_t length, int flags, int verboseFlag) {
 	char msg[MAX_LEN];
 	int n;
 
+	memset(buffer, 0, length);
+
 	if((n = recv(socket, buffer, length, flags)) < 5) {
 		return;
 	}

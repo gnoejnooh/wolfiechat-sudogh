@@ -24,13 +24,14 @@ int openClientFd(char *hostname, char *port);
 int login(char *name);
 void executeCommand();
 
-void logout();
-void time();
+void timeCommand();
+void logoutCommand();
+void listuCommand();
 
 void printUsage();
 
 void printError(char *msg);
 
-void sigintHandler(int signal);
+void sigintHandler(int signum);
 
 #endif

@@ -18,24 +18,26 @@
 #include "Wrapper.h"
 #include "User.h"
 
+UserList userList;
+
+int verboseFlag;
+int runFlag;
+
 typedef struct loginThreadParam {
 	pthread_t tid;
 	int *connfd;
-	char *motd;
-	UserList *userList;
-	int verboseFlag;
+	char motd[MAX_LEN];
 } LoginThreadParam;
 
 typedef struct communicationThreadParam {
 	int *connfd;
 	UserList *userList;
-	char *userName;
-	int verboseFlag;
+	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
 
-void parseOption(int argc, char **argv, char *port, char *motd, int *verboseFlag);
+void parseOption(int argc, char **argv, char *port, char *motd);
 int openListenFd(char *port);
-int executeCommand(UserList *userList);
+void executeCommand();
 
 void printPrompt();
 void printUsage();
@@ -44,5 +46,9 @@ void printError(char *msg);
 
 void * loginThread(void *argv);
 void * communicationThread(void *argv);
+
+void timeCommand(int connfd, time_t begin);
+void listuCommand(int connfd);
+void shutdownCommand();
 
 #endif

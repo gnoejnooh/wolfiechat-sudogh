@@ -127,34 +127,25 @@ int login(char *name) {
   int loginSucceed = FALSE;
   
   Send(clientfd, "WOLFIE \r\n\r\n", strlen("WOLFIE \r\n\r\n"), 0, verboseFlag);
-  memset(buf, 0, MAX_LEN);
   Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
 
   if(strcmp(buf, "EIFLOW \r\n\r\n") == 0) {
-    memset(buf, 0, MAX_LEN);
-    strcat(buf, "IAM ");
-    strcat(buf, name);
-    strcat(buf, " \r\n\r\n");
+    sprintf(buf, "IAM %s \r\n\r\n", name);
 
     Send(clientfd, buf, strlen(buf), 0, verboseFlag);
-    memset(buf, 0, MAX_LEN);
     Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
 
     if(strncmp(buf, "HI ", 3) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-      memset(buf, 0, MAX_LEN);
       Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
 
       if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-        strcpy(motd, &buf[5]);
-        motd[strlen(motd)-5] = '\0';
+        sscanf(buf, "MOTD %s \r\n\r\n", motd);
         printf("%s\n", motd); 
 
         loginSucceed = TRUE;
       }
     } else if(strcmp(buf, "ERR 00 USER NAME TAKEN \r\n\r\n") == 0) {
-      memset(buf, 0, MAX_LEN);
       Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
-
       Send(clientfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0, verboseFlag);
     }
   }
@@ -168,29 +159,53 @@ void executeCommand() {
   fgets(buf, MAX_LEN, stdin);
 
   if(strcmp(buf, "/time\n") == 0) {
-    printError("Not implemented yet\n");
+    timeCommand();
   } else if(strcmp(buf, "/help\n") == 0) {
     printUsage();
   } else if(strcmp(buf, "/logout\n") == 0) {
-    logout();
-    runFlag = FALSE;
+    logoutCommand();
   } else if(strcmp(buf, "/listu\n") == 0) {
-    printError("Not implemented yet\n");
+    listuCommand();
   } else {
     printError("Command does not exist\n");
   }
 }
 
-void logout() {
+void timeCommand() {
+  char buf[MAX_LEN];
+  long int duration = 0;
+
+  Send(clientfd, "TIME \r\n\r\n", strlen("TIME \r\n\r\n"), 0, verboseFlag);
+  Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+
+  sscanf(buf, "EMIT %ld \r\n\r\n", &duration);
+  printf("Connected for %d hour(s) %d minute(s), and %d second(s)\n",
+    (int)duration/3600, ((int)duration%3600)/60, ((int)duration%3600)%60);
+}
+
+void logoutCommand() {
   char buf[MAX_LEN];
 
   Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0, verboseFlag);
   Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+
+  runFlag = FALSE;
 }
 
-void time() {
+void listuCommand() {
+  char buf[MAX_LISTU_LEN];
+  char *token;
 
-  Send(clientfd, "TIME \r\n\r\n", strlen("TIME \r\n\r\n"), 0, verboseFlag);
+  Send(clientfd, "LISTU \r\n\r\n", strlen("LISTU \r\n\r\n"), 0, verboseFlag);
+  Recv(clientfd, buf, MAX_LISTU_LEN, 0, verboseFlag);
+
+  if(strncmp(buf, "UTSIL ", 6) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+    token = strtok(buf, " \r\n");
+    token = strtok(NULL, " \r\n");
+    while(token != NULL) {
+      token = strtok(NULL, " \r\n");
+    }
+  }
 }
 
 void printUsage() {
@@ -209,7 +224,7 @@ void printError(char *msg) {
   fprintf(stderr, "\x1B[0m");
 }
 
-void sigintHandler(int signal) {
-  logout();
-  exit(EXIT_FAILURE);
+void sigintHandler(int signum) {
+  logoutCommand();
+  exit(signum);
 }
