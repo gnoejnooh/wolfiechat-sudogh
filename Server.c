@@ -201,11 +201,11 @@ void * loginThread(void *argv) {
   free(param->connfd);
   free(argv);
 
-  Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
+  Recv(connfd, buf, MAX_LEN, 0);
 
   if(strcmp(buf, "WOLFIE \r\n\r\n") == 0) {
-    Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0, verboseFlag);
-    Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
+    Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0);
+    Recv(connfd, buf, MAX_LEN, 0);
 
     if(strncmp(buf, "IAM ", 4) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
       strcpy(userName, &buf[4]);
@@ -217,12 +217,12 @@ void * loginThread(void *argv) {
         
         memset(buf, 0, MAX_LEN);
         sprintf(buf, "HI %s \r\n\r\n", userName);
-        Send(connfd, buf, strlen(buf), 0, verboseFlag);
+        Send(connfd, buf, strlen(buf), 0);
         insertUser(&userList, userName, connfd);
         
         memset(buf, 0, MAX_LEN);
         sprintf(buf, "MOTD %s \r\n\r\n", motd);
-        Send(connfd, buf, strlen(buf), 0, verboseFlag);
+        Send(connfd, buf, strlen(buf), 0);
 
         communicationThreadParam->connfd = &connfd;
         strcpy(communicationThreadParam->userName, userName);
@@ -230,10 +230,10 @@ void * loginThread(void *argv) {
 
       } else {
 
-        Send(connfd, "ERR 00 USER NAME TAKEN \r\n\r\n", strlen("ERR 00 USER NAME TAKEN \r\n\r\n"), 0, verboseFlag);
-        Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0, verboseFlag);
+        Send(connfd, "ERR 00 USER NAME TAKEN \r\n\r\n", strlen("ERR 00 USER NAME TAKEN \r\n\r\n"), 0);
+        Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
 
-        Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
+        Recv(connfd, buf, MAX_LEN, 0);
 
         printf("%s\n", buf);
         close(connfd);
@@ -259,14 +259,14 @@ void * communicationThread(void *argv) {
   free(argv);
 
   while(TRUE) {
-    Recv(connfd, buf, MAX_LEN, 0, verboseFlag);
+    Recv(connfd, buf, MAX_LEN, 0);
 
     if(strcmp(buf, "TIME \r\n\r\n") == 0) {
       timeCommand(connfd, begin);
     } else if(strcmp(buf, "LISTU \r\n\r\n") == 0) {
       listuCommand(connfd);
     } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
-      Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0, verboseFlag);
+      Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
       printf("%s\n", userName);
       deleteUser(&userList, userName);
       break;
@@ -283,7 +283,7 @@ void timeCommand(int connfd, time_t begin) {
   time_t current = time(NULL);
 
   sprintf(buf, "EMIT %ld \r\n\r\n", current-begin);
-  Send(connfd, buf, sizeof(buf), 0, verboseFlag);
+  Send(connfd, buf, sizeof(buf), 0);
 }
 
 void listuCommand(int connfd) {
@@ -300,7 +300,7 @@ void listuCommand(int connfd) {
   }
 
   sprintf(buf+strlen(buf), "\r\n");
-  Send(connfd, buf, sizeof(buf), 0, verboseFlag);
+  Send(connfd, buf, sizeof(buf), 0);
 }
 
 void shutdownCommand() {
@@ -309,7 +309,7 @@ void shutdownCommand() {
 
   while(cur != NULL) {
     connfd = cur->connfd;
-    Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0, verboseFlag);
+    Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
     cur = cur->next;
   }
 

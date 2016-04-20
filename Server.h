@@ -20,7 +20,7 @@
 
 UserList userList;
 
-int verboseFlag;
+extern int verboseFlag;
 int runFlag;
 
 typedef struct loginThreadParam {

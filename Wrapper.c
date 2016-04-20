@@ -1,6 +1,6 @@
 #include "Wrapper.h"
 
-void Send(int socket, const void *buffer, size_t length, int flags, int verboseFlag) {
+void Send(int socket, const void *buffer, size_t length, int flags) {
 	char msg[MAX_LEN];
 	int n;
 	
@@ -15,7 +15,7 @@ void Send(int socket, const void *buffer, size_t length, int flags, int verboseF
 	}
 }
 
-void Recv(int socket, void *buffer, size_t length, int flags, int verboseFlag) {
+void Recv(int socket, void *buffer, size_t length, int flags) {
 	char msg[MAX_LEN];
 	int n;
 

@@ -2,7 +2,6 @@
 
 int main(int argc, char **argv) {
 
-  char name[MAX_NAME_LEN];
   char hostname[MAX_HOSTNAME_LEN];
   char port[MAX_PORT_LEN];
 
@@ -14,14 +13,14 @@ int main(int argc, char **argv) {
 
   signal(SIGINT, sigintHandler);
 
-  parseOption(argc, argv, name, hostname, port);
+  parseOption(argc, argv, hostname, port);
 
   if((clientfd = openClientFd(hostname, port)) == -1) {
     printError("Failed to connect on server\n");
     exit(EXIT_FAILURE);
   }
 
-  if(login(name) == TRUE) {
+  if(login() == TRUE) {
     
     FD_ZERO(&readSet);
     FD_SET(STDIN, &readSet);
@@ -36,7 +35,7 @@ int main(int argc, char **argv) {
       }
 
       if(FD_ISSET(clientfd, &readySet)) {
-        
+
       }
     }
   } else {
@@ -48,7 +47,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void parseOption(int argc, char **argv, char *name, char *hostname, char *port) {
+void parseOption(int argc, char **argv, char *hostname, char *port) {
 
   int opt;
 
@@ -120,23 +119,23 @@ int openClientFd(char *hostname, char *port) {
   }
 }
 
-int login(char *name) {
+int login() {
   char buf[MAX_LEN];
   char motd[MAX_LEN];
 
   int loginSucceed = FALSE;
   
-  Send(clientfd, "WOLFIE \r\n\r\n", strlen("WOLFIE \r\n\r\n"), 0, verboseFlag);
-  Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+  Send(clientfd, "WOLFIE \r\n\r\n", strlen("WOLFIE \r\n\r\n"), 0);
+  Recv(clientfd, buf, MAX_LEN, 0);
 
   if(strcmp(buf, "EIFLOW \r\n\r\n") == 0) {
     sprintf(buf, "IAM %s \r\n\r\n", name);
 
-    Send(clientfd, buf, strlen(buf), 0, verboseFlag);
-    Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+    Send(clientfd, buf, strlen(buf), 0);
+    Recv(clientfd, buf, MAX_LEN, 0);
 
     if(strncmp(buf, "HI ", 3) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-      Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+      Recv(clientfd, buf, MAX_LEN, 0);
 
       if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
         sscanf(buf, "MOTD %s \r\n\r\n", motd);
@@ -145,8 +144,8 @@ int login(char *name) {
         loginSucceed = TRUE;
       }
     } else if(strcmp(buf, "ERR 00 USER NAME TAKEN \r\n\r\n") == 0) {
-      Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
-      Send(clientfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0, verboseFlag);
+      Recv(clientfd, buf, MAX_LEN, 0);
+      Send(clientfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
     }
   }
 
@@ -156,6 +155,7 @@ int login(char *name) {
 void executeCommand() {
   
   char buf[MAX_LEN];
+  
   fgets(buf, MAX_LEN, stdin);
 
   if(strcmp(buf, "/time\n") == 0) {
@@ -166,6 +166,8 @@ void executeCommand() {
     logoutCommand();
   } else if(strcmp(buf, "/listu\n") == 0) {
     listuCommand();
+  } else if(strncmp(buf, "/chat ", 6) == 0) {
+  	chatCommand(buf);
   } else {
     printError("Command does not exist\n");
   }
@@ -175,8 +177,8 @@ void timeCommand() {
   char buf[MAX_LEN];
   long int duration = 0;
 
-  Send(clientfd, "TIME \r\n\r\n", strlen("TIME \r\n\r\n"), 0, verboseFlag);
-  Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+  Send(clientfd, "TIME \r\n\r\n", strlen("TIME \r\n\r\n"), 0);
+  Recv(clientfd, buf, MAX_LEN, 0);
 
   sscanf(buf, "EMIT %ld \r\n\r\n", &duration);
   printf("Connected for %d hour(s) %d minute(s), and %d second(s)\n",
@@ -186,8 +188,8 @@ void timeCommand() {
 void logoutCommand() {
   char buf[MAX_LEN];
 
-  Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0, verboseFlag);
-  Recv(clientfd, buf, MAX_LEN, 0, verboseFlag);
+  Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
+  Recv(clientfd, buf, MAX_LEN, 0);
 
   runFlag = FALSE;
 }
@@ -196,8 +198,8 @@ void listuCommand() {
   char buf[MAX_LISTU_LEN];
   char *token;
 
-  Send(clientfd, "LISTU \r\n\r\n", strlen("LISTU \r\n\r\n"), 0, verboseFlag);
-  Recv(clientfd, buf, MAX_LISTU_LEN, 0, verboseFlag);
+  Send(clientfd, "LISTU \r\n\r\n", strlen("LISTU \r\n\r\n"), 0);
+  Recv(clientfd, buf, MAX_LISTU_LEN, 0);
 
   if(strncmp(buf, "UTSIL ", 6) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     token = strtok(buf, " \r\n");
@@ -206,6 +208,33 @@ void listuCommand() {
       token = strtok(NULL, " \r\n");
     }
   }
+}
+
+void chatCommand(char *line) {
+	char to[MAX_NAME_LEN];
+  char msg[MAX_LEN];
+  char buf[MAX_LEN];
+
+	pid_t pid;
+	char *cmd[] = {"/usr/bin/xterm", "-geometry", "45x35+100+100", "-e", "./chat", (void*)NULL};
+
+	sscanf(line, "/chat %s", to);
+	line = strchr(line, ' ');
+	line = strchr(&line[1], ' ');
+	strcpy(msg, &line[1]);
+
+	if(to == NULL || msg == NULL) {
+		printError("invalid format\n");
+		printUsage();
+		return;
+	}
+	sprintf(buf, "MSG %s %s %s \r\n\r\n", to, name, msg);
+	Send(clientfd, buf, sizeof(buf), 0);
+	if((pid = fork()) == 0) {
+		execvp(cmd[0], cmd);
+		exit(0);
+	}
+	//waitpid(pid, 0, 0);
 }
 
 void printUsage() {

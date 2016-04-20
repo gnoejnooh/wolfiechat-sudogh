@@ -1,4 +1,4 @@
-all: server client
+all: server client chat
 
 User.o: User.c
 	gcc -Wall -Werror -c User.c
@@ -6,11 +6,14 @@ User.o: User.c
 Wrapper.o: Wrapper.c
 	gcc -Wall -Werror -c Wrapper.c
 
+chat: Chat.c
+	gcc -Wall -Werror -o chat Chat.c
+
 server: Server.c User.o Wrapper.o
 	gcc -Wall -Werror -pthread -o server Server.c User.o Wrapper.o
 
 client: Client.c Wrapper.o
-	gcc -Wall -Werror -o client Client.c Wrapper.o
+	gcc -Wall -Werror -pthread -o client Client.c Wrapper.o
 
 clean:
 	rm -f *~ *.o server client
