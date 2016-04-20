@@ -166,7 +166,7 @@ void executeCommand() {
     logoutCommand();
   } else if(strcmp(buf, "/listu\n") == 0) {
     listuCommand();
-  } else if(strncmp(buf, "/chat ", 6) == 0) {
+  } else if(strncmp(buf, "/chat", 5) == 0) {
   	chatCommand(buf);
   } else {
     printError("Command does not exist\n");
@@ -215,26 +215,30 @@ void chatCommand(char *line) {
   char msg[MAX_LEN];
   char buf[MAX_LEN];
 
-	pid_t pid;
-	char *cmd[] = {"/usr/bin/xterm", "-geometry", "45x35+100+100", "-e", "./chat", (void*)NULL};
+  memset(to, 0, MAX_NAME_LEN);
+  memset(msg, 0, MAX_LEN);
+  memset(buf, 0, MAX_LEN);
 
-	sscanf(line, "/chat %s", to);
-	line = strchr(line, ' ');
-	line = strchr(&line[1], ' ');
-	strcpy(msg, &line[1]);
+	if(verifyChatCommand(line, to, msg) == FALSE) {
+    printError("Invalid format\n");
+    return;
+  }
 
-	if(to == NULL || msg == NULL) {
-		printError("invalid format\n");
-		printUsage();
-		return;
-	}
 	sprintf(buf, "MSG %s %s %s \r\n\r\n", to, name, msg);
-	Send(clientfd, buf, sizeof(buf), 0);
-	if((pid = fork()) == 0) {
-		execvp(cmd[0], cmd);
-		exit(0);
-	}
-	//waitpid(pid, 0, 0);
+  Send(clientfd, buf, sizeof(buf), 0);
+}
+
+int verifyChatCommand(char *line, char *to, char *msg) {
+  int verified = FALSE;
+
+  line[strlen(line)-1] = '\0';
+  sscanf(line, "/chat %s %1024[^\n]", to, msg);
+
+  if(strlen(to) != 0 && strlen(msg) != 0) {
+    verified = TRUE;
+  }
+
+  return verified;
 }
 
 void printUsage() {

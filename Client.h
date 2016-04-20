@@ -8,13 +8,13 @@
 #include <errno.h>
 #include <netdb.h>
 #include <signal.h>
+#include <pthread.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "Constant.h"
 #include "Wrapper.h"
-#include <sys/wait.h>
-#include <pthread.h>
 
 int clientfd;
 char name[MAX_NAME_LEN];
@@ -31,6 +31,8 @@ void timeCommand();
 void logoutCommand();
 void listuCommand();
 void chatCommand(char *line);
+
+int verifyChatCommand(char *line, char *to, char *msg);
 
 void printUsage();
 

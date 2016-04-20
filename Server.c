@@ -18,6 +18,8 @@ int main(int argc, char **argv) {
 
   LoginThreadParam *loginThreadParam = NULL;
 
+  signal(SIGINT, sigintHandler);
+
   verboseFlag = FALSE;
   runFlag = TRUE;
 
@@ -314,4 +316,9 @@ void shutdownCommand() {
   }
 
   runFlag = FALSE;
+}
+
+void sigintHandler(int signum) {
+  shutdownCommand();
+  exit(signum);
 }
