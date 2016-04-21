@@ -40,6 +40,8 @@ void parseOption(int argc, char **argv, char *port, char *motd);
 int openListenFd(char *port);
 void executeCommand();
 
+void shutdownCommand();
+
 void printPrompt();
 void printUsage();
 
@@ -48,9 +50,9 @@ void printError(char *msg);
 void * loginThread(void *argv);
 void * communicationThread(void *argv);
 
-void timeCommand(int connfd, time_t begin);
-void listuCommand(int connfd);
-void shutdownCommand();
+void receiveTimeMessage(int connfd, time_t begin);
+void receiveListuMessage(int connfd);
+void receiveChatMessage(int connfd, char *line);
 
 void sigintHandler(int signum);
 

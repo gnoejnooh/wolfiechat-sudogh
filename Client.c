@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
       }
 
       if(FD_ISSET(clientfd, &readySet)) {
-
+        receiveMessage();
       }
     }
   } else {
@@ -173,6 +173,36 @@ void executeCommand() {
   }
 }
 
+void receiveMessage() {
+  char buf[MAX_LEN];
+
+  Recv(clientfd, buf, MAX_LEN, 0);
+
+  if(strncmp(buf, "MSG", 3) == 0) {
+    receiveChatMessage(buf);
+  }
+}
+
+void receiveChatMessage(char *line) {
+  char buf[MAX_LEN];
+  char to[MAX_NAME_LEN];
+  char from[MAX_NAME_LEN];
+  char msg[MAX_LEN];
+
+  memset(buf, 0, MAX_LEN);
+  memset(to, 0, MAX_NAME_LEN);
+  memset(from, 0, MAX_NAME_LEN);
+  memset(msg, 0, MAX_LEN);
+
+  sscanf(line, "MSG %s %s %1024[^\n]", to, from, msg);
+
+  if(strcpy(name, to) == 0) {
+
+  } else if(strcpy(name, from) == 0) {
+
+  }
+}
+
 void timeCommand() {
   char buf[MAX_LEN];
   long int duration = 0;
@@ -211,13 +241,13 @@ void listuCommand() {
 }
 
 void chatCommand(char *line) {
-	char to[MAX_NAME_LEN];
+	char buf[MAX_LEN];
+  char to[MAX_NAME_LEN];
   char msg[MAX_LEN];
-  char buf[MAX_LEN];
 
+  memset(buf, 0, MAX_LEN);
   memset(to, 0, MAX_NAME_LEN);
   memset(msg, 0, MAX_LEN);
-  memset(buf, 0, MAX_LEN);
 
 	if(verifyChatCommand(line, to, msg) == FALSE) {
     printError("Invalid format\n");

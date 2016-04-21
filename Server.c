@@ -168,6 +168,19 @@ void executeCommand() {
   }
 }
 
+void shutdownCommand() {
+  User *cur = userList.head;
+  int connfd;
+
+  while(cur != NULL) {
+    connfd = cur->connfd;
+    Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
+    cur = cur->next;
+  }
+
+  runFlag = FALSE;
+}
+
 void printPrompt() {
   printf("server> ");
   fflush(stdout);
@@ -264,12 +277,13 @@ void * communicationThread(void *argv) {
     Recv(connfd, buf, MAX_LEN, 0);
 
     if(strcmp(buf, "TIME \r\n\r\n") == 0) {
-      timeCommand(connfd, begin);
+      receiveTimeMessage(connfd, begin);
     } else if(strcmp(buf, "LISTU \r\n\r\n") == 0) {
-      listuCommand(connfd);
+      receiveListuMessage(connfd);
+    } else if(strncmp(buf, "MSG", 3) == 0) {
+      receiveChatMessage(connfd, buf);
     } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
       Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
-      printf("%s\n", userName);
       deleteUser(&userList, userName);
       break;
     }
@@ -280,7 +294,7 @@ void * communicationThread(void *argv) {
   return NULL;
 }
 
-void timeCommand(int connfd, time_t begin) {
+void receiveTimeMessage(int connfd, time_t begin) {
   char buf[MAX_LEN];
   time_t current = time(NULL);
 
@@ -288,7 +302,7 @@ void timeCommand(int connfd, time_t begin) {
   Send(connfd, buf, sizeof(buf), 0);
 }
 
-void listuCommand(int connfd) {
+void receiveListuMessage(int connfd) {
   char buf[MAX_LISTU_LEN];
 
   User *cur = userList.head;
@@ -305,17 +319,24 @@ void listuCommand(int connfd) {
   Send(connfd, buf, sizeof(buf), 0);
 }
 
-void shutdownCommand() {
-  User *cur = userList.head;
-  int connfd;
+void receiveChatMessage(int connfd, char *line) {
+  char to[MAX_NAME_LEN];
+  char from[MAX_NAME_LEN];
 
-  while(cur != NULL) {
-    connfd = cur->connfd;
-    Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
-    cur = cur->next;
+  User *user;
+  int userConnfd;
+
+  sscanf(line, "MSG %s %s", to, from);
+
+  if((user = findUser(userList, to)) != NULL) {
+    userConnfd = user->connfd;
+    Send(userConnfd, line, MAX_LEN, 0);
   }
 
-  runFlag = FALSE;
+  if((user = findUser(userList, from)) != NULL) {
+    userConnfd = user->connfd;
+    Send(userConnfd, line, MAX_LEN, 0);
+  }
 }
 
 void sigintHandler(int signum) {

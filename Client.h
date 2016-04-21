@@ -26,6 +26,9 @@ void parseOption(int argc, char **argv, char *hostname, char *port);
 int openClientFd(char *hostname, char *port);
 int login();
 void executeCommand();
+void receiveMessage();
+
+void receiveChatMessage(char *line);
 
 void timeCommand();
 void logoutCommand();

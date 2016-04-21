@@ -26,6 +26,7 @@ void insertUser(UserList *userList, char *userName, int connfd);
 void deleteUser(UserList *userList, char *userName);
 void printAllUserInfo(UserList userList);
 int isUserExist(UserList userList, char *userName);
+User * findUser(UserList userList, char *userName);
 void freeUserList(UserList *userList);
 
 #endif

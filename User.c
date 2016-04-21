@@ -111,6 +111,23 @@ int isUserExist(UserList userList, char *userName) {
 	return FALSE;
 }
 
+User * findUser(UserList userList, char *userName) {
+	User *cur = userList.head;
+	User *next = NULL;
+
+	int i;
+
+	for(i=0; i<userList.count; i++) {
+		next = cur->next;
+		if(strcmp(cur->userName, userName) == 0) {
+			return cur;
+		}
+		cur = next;
+	}
+
+	return NULL;
+}
+
 void freeUserList(UserList *userList) {
 	User *cur = userList->head;
 	User *next = NULL;
