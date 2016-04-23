@@ -12,8 +12,8 @@ chat: Chat.c
 server: Server.c User.o Wrapper.o
 	gcc -Wall -Werror -pthread -o server Server.c User.o Wrapper.o
 
-client: Client.c Wrapper.o
-	gcc -Wall -Werror -pthread -o client Client.c Wrapper.o
+client: Client.c User.o Wrapper.o
+	gcc -Wall -Werror -pthread -o client Client.c User.o Wrapper.o
 
 clean:
 	rm -f *~ *.o server client

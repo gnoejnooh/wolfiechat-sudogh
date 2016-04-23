@@ -15,9 +15,12 @@
 #include <netinet/in.h>
 #include "Constant.h"
 #include "Wrapper.h"
+#include "User.h"
 
 int clientfd;
+
 char name[MAX_NAME_LEN];
+UserList userList;
 
 int runFlag;
 extern int verboseFlag;
@@ -29,6 +32,7 @@ void executeCommand();
 void receiveMessage();
 
 void receiveChatMessage(char *line);
+void processChatMessage(char *to, char *from, char *msg);
 
 void timeCommand();
 void logoutCommand();

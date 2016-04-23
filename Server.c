@@ -59,6 +59,7 @@ int main(int argc, char **argv) {
       connfd = malloc(sizeof(int));
     
       if((*connfd = accept(listenfd, (struct sockaddr *)connAddr, &connLen)) != -1) {
+        printf("%d\n", *connfd);
         loginThreadParam->connfd = connfd;
         strcpy(loginThreadParam->motd, motd);
         pthread_create(&tid, NULL, loginThread, loginThreadParam);
