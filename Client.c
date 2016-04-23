@@ -204,14 +204,17 @@ void receiveChatMessage(char *line) {
 void processChatMessage(char *to, char *from, char *msg) {
 
   int socketfd[2];
-  int pid;
-  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-hold", "-geometry", "45x35+100+100", "-e", "./chat"};
-  char fd[MAX_FD_LEN];
-
+  
   socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
+  openChatWindow(socketfd, to, from);
+}
+
+void openChatWindow(int socketfd[], char *to, char* from) {
+  int pid;
+  char fd[MAX_FD_LEN];
+  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-hold", "-geometry", "45x35+100+100", "-e", "./chat"};
   memset(fd, 0, MAX_FD_LEN);
   sprintf(fd, "%d", socketfd[1]);
-  
   cmd[6] = fd;
   cmd[7] = (void *)NULL;
 
@@ -222,6 +225,8 @@ void processChatMessage(char *to, char *from, char *msg) {
       insertUser(&userList, to, -1);
       if((pid = fork()) == 0) {
         execv(cmd[0], cmd);
+        puts("TEST EXIT");
+        exit(EXIT_SUCCESS);
       }
     }
   } else if(strcmp(name, from) == 0) {
@@ -231,6 +236,8 @@ void processChatMessage(char *to, char *from, char *msg) {
       insertUser(&userList, from, -1);
       if((pid = fork()) == 0) {
         execv(cmd[0], cmd);
+        puts("TEST EXIT");
+        exit(EXIT_SUCCESS);
       }
     }
   }
