@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
   verboseFlag = FALSE;
 
   signal(SIGINT, sigintHandler);
+  signal(SIGCHLD, sigchldHandler);
 
   parseOption(argc, argv, hostname, port);
 
@@ -205,6 +206,8 @@ void processChatMessage(char *to, char *from, char *msg) {
 
   int socketfd[2];
   int pid;
+  char buf[MAX_LEN];
+
   char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35+100+100", "-e", "./chat"};
   char fd[MAX_FD_LEN];
 
@@ -216,24 +219,43 @@ void processChatMessage(char *to, char *from, char *msg) {
   cmd[6] = (void *)NULL;
 
   if(strcmp(name, to) == 0) {
-    if(isUserExist(userList, to) == FALSE) {
-      insertUser(&userList, to, -1);
-      if((pid = fork()) == 0) {
-        execv(cmd[0], cmd);
-        exit(EXIT_SUCCESS);
-      }
-      waitpid(pid, NULL, WNOHANG);
-    }
-  } else if(strcmp(name, from) == 0) {
     if(isUserExist(userList, from) == FALSE) {
       insertUser(&userList, from, -1);
       if((pid = fork()) == 0) {
+        close(socketfd[0]);
         execv(cmd[0], cmd);
         exit(EXIT_SUCCESS);
+      } else {
+        close(socketfd[1]);
+        if((pid = fork()) == 0) {
+          while(TRUE) {
+            Recv(socketfd[0], buf, MAX_LEN, 0);
+            printf("%s\n", fd);
+          }
+          exit(EXIT_SUCCESS);
+        }
       }
-      waitpid(pid, NULL, WNOHANG);
+    }
+  } else if(strcmp(name, from) == 0) {
+    if(isUserExist(userList, to) == FALSE) {
+      insertUser(&userList, to, -1);
+      if((pid = fork()) == 0) {
+        close(socketfd[0]);
+        execv(cmd[0], cmd);
+        exit(EXIT_SUCCESS);
+      } else {
+        close(socketfd[1]);
+        if((pid = fork()) == 0) {
+          while(TRUE) {
+            Recv(socketfd[0], buf, MAX_LEN, 0);
+          }
+          exit(EXIT_SUCCESS);
+        }
+      }
     }
   }
+
+  printf("%d %d\n", socketfd[0], socketfd[1]);
 }
 
 void timeCommand() {
@@ -323,4 +345,9 @@ void printError(char *msg) {
 void sigintHandler(int signum) {
   logoutCommand();
   exit(signum);
+}
+
+void sigchldHandler(int signum) {
+  while(waitpid(-1, 0, WNOHANG) > 0);
+  return;
 }

@@ -46,5 +46,6 @@ void printUsage();
 void printError(char *msg);
 
 void sigintHandler(int signum);
+void sigchldHandler(int signum);
 
 #endif
