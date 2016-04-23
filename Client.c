@@ -205,33 +205,33 @@ void processChatMessage(char *to, char *from, char *msg) {
 
   int socketfd[2];
   int pid;
-  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-hold", "-geometry", "45x35+100+100", "-e", "./chat"};
+  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35+100+100", "-e", "./chat"};
   char fd[MAX_FD_LEN];
 
   socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
   memset(fd, 0, MAX_FD_LEN);
   sprintf(fd, "%d", socketfd[1]);
   
-  cmd[6] = fd;
-  cmd[7] = (void *)NULL;
+  cmd[5] = fd;
+  cmd[6] = (void *)NULL;
 
   if(strcmp(name, to) == 0) {
-    puts("CHECK1");
     if(isUserExist(userList, to) == FALSE) {
-      puts("CHECK1");
       insertUser(&userList, to, -1);
       if((pid = fork()) == 0) {
         execv(cmd[0], cmd);
+        exit(EXIT_SUCCESS);
       }
+      waitpid(pid, NULL, WNOHANG);
     }
   } else if(strcmp(name, from) == 0) {
-    puts("CHECK2");
     if(isUserExist(userList, from) == FALSE) {
-      puts("CHECK2");
       insertUser(&userList, from, -1);
       if((pid = fork()) == 0) {
         execv(cmd[0], cmd);
+        exit(EXIT_SUCCESS);
       }
+      waitpid(pid, NULL, WNOHANG);
     }
   }
 }
