@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 		fgets(buf, MAX_LEN, stdin);
 		buf[strlen(buf)-1] = '\0';
 
-		if(strcmp(buf, "close") == 0) {
+		if(strcmp(buf, "/close") == 0) {
 			break;
 		}
 

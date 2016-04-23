@@ -211,51 +211,41 @@ void processChatMessage(char *to, char *from, char *msg) {
   char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35+100+100", "-e", "./chat"};
   char fd[MAX_FD_LEN];
 
-  socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
+  char userName[MAX_NAME_LEN];
+
   memset(fd, 0, MAX_FD_LEN);
-  sprintf(fd, "%d", socketfd[1]);
-  
+
   cmd[5] = fd;
   cmd[6] = (void *)NULL;
 
   if(strcmp(name, to) == 0) {
-    if(isUserExist(userList, from) == FALSE) {
-      insertUser(&userList, from, -1);
-      if((pid = fork()) == 0) {
-        close(socketfd[0]);
-        execv(cmd[0], cmd);
-        exit(EXIT_SUCCESS);
-      } else {
-        close(socketfd[1]);
-        if((pid = fork()) == 0) {
-          while(TRUE) {
-            Recv(socketfd[0], buf, MAX_LEN, 0);
-            printf("%s\n", fd);
-          }
-          exit(EXIT_SUCCESS);
-        }
-      }
-    }
+    strcpy(userName, from);
   } else if(strcmp(name, from) == 0) {
-    if(isUserExist(userList, to) == FALSE) {
-      insertUser(&userList, to, -1);
-      if((pid = fork()) == 0) {
-        close(socketfd[0]);
-        execv(cmd[0], cmd);
-        exit(EXIT_SUCCESS);
-      } else {
-        close(socketfd[1]);
-        if((pid = fork()) == 0) {
-          while(TRUE) {
-            Recv(socketfd[0], buf, MAX_LEN, 0);
-          }
-          exit(EXIT_SUCCESS);
-        }
-      }
-    }
+    strcpy(userName, to);
   }
 
-  printf("%d %d\n", socketfd[0], socketfd[1]);
+  if(isUserExist(userList, userName) == FALSE) {
+    socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
+    insertUser(&userList, userName, socketfd[0]);
+    if((pid = fork()) == 0) {
+      close(socketfd[0]);
+      execv(cmd[0], cmd);
+      exit(EXIT_SUCCESS);
+    } else {
+      close(socketfd[1]);
+      if((pid = fork()) == 0) {
+        while(TRUE) {
+          Recv(socketfd[0], buf, MAX_LEN, 0);
+          printf("%s\n", fd);
+        }
+        exit(EXIT_SUCCESS);
+      }
+    }
+  } else {
+    User *user = findUser(userList, from);
+    int connfd = user->connfd;
+    Send(connfd, msg, MAX_LEN, 0);
+  }
 }
 
 void timeCommand() {
