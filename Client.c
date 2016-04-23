@@ -208,15 +208,12 @@ void processChatMessage(char *to, char *from, char *msg) {
   int pid;
   char buf[MAX_LEN];
 
-  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35+100+100", "-e", "./chat"};
+  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35+100+100"};
   char fd[MAX_FD_LEN];
 
   char userName[MAX_NAME_LEN];
 
   memset(fd, 0, MAX_FD_LEN);
-
-  cmd[5] = fd;
-  cmd[6] = (void *)NULL;
 
   if(strcmp(name, to) == 0) {
     strcpy(userName, from);
@@ -226,6 +223,16 @@ void processChatMessage(char *to, char *from, char *msg) {
 
   if(isUserExist(userList, userName) == FALSE) {
     socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
+
+    sprintf(fd, "%d", socketfd[1]);
+
+    cmd[3] = "-T";
+    cmd[4] = userName;
+    cmd[5] = "-e";
+    cmd[6] = "./chat";
+    cmd[7] = fd;
+    cmd[8] = (void *)NULL;
+
     insertUser(&userList, userName, socketfd[0]);
     if((pid = fork()) == 0) {
       close(socketfd[0]);
@@ -233,18 +240,42 @@ void processChatMessage(char *to, char *from, char *msg) {
       exit(EXIT_SUCCESS);
     } else {
       close(socketfd[1]);
+      memset(buf, 0, MAX_LEN);
+      
+      if(strcmp(name, to) == 0) {
+        sprintf(buf, "< %s", msg);
+      } else {
+        sprintf(buf, "> %s", msg);
+      }
+
+      Send(socketfd[0], buf, MAX_LEN, 0);
       if((pid = fork()) == 0) {
         while(TRUE) {
-          Recv(socketfd[0], buf, MAX_LEN, 0);
-          printf("%s\n", fd);
+          Recv(socketfd[0], msg, MAX_LEN, 0);
+          
+          if(strlen(msg) != 0) {
+            memset(buf, 0, MAX_LEN);
+            sprintf(buf, "MSG %s %s %s \r\n\r\n", to, from, msg);
+            Send(clientfd, buf, MAX_LEN, 0);
+          }
         }
         exit(EXIT_SUCCESS);
       }
     }
   } else {
-    User *user = findUser(userList, from);
+
+    User *user = findUser(userList, userName);
     int connfd = user->connfd;
-    Send(connfd, msg, MAX_LEN, 0);
+
+    memset(buf, 0, MAX_LEN);
+
+    if(strcmp(name, to) == 0) {
+      sprintf(buf, "< %s", msg);
+    } else {
+      sprintf(buf, "> %s", msg);
+    }
+
+    Send(connfd, buf, MAX_LEN, 0);
   }
 }
 

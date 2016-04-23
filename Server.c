@@ -329,14 +329,26 @@ void receiveChatMessage(int connfd, char *line) {
 
   sscanf(line, "MSG %s %s", to, from);
 
-  if((user = findUser(userList, to)) != NULL) {
-    userConnfd = user->connfd;
-    Send(userConnfd, line, MAX_LEN, 0);
-  }
+  if(isUserExist(userList, to) == FALSE || isUserExist(userList, from) == FALSE) {
+    if((user = findUser(userList, to)) != NULL) {
+      userConnfd = user->connfd;
+      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE"), 0);
+    }
 
-  if((user = findUser(userList, from)) != NULL) {
-    userConnfd = user->connfd;
-    Send(userConnfd, line, MAX_LEN, 0);
+    if((user = findUser(userList, from)) != NULL) {
+      userConnfd = user->connfd;
+      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE"), 0);
+    }
+  } else {
+    if((user = findUser(userList, to)) != NULL) {
+      userConnfd = user->connfd;
+      Send(userConnfd, line, MAX_LEN, 0);
+    }
+
+    if((user = findUser(userList, from)) != NULL) {
+      userConnfd = user->connfd;
+      Send(userConnfd, line, MAX_LEN, 0);
+    }
   }
 }
 
