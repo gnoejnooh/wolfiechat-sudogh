@@ -215,7 +215,8 @@ void processChatMessage(char *to, char *from, char *msg) {
   cmd[6] = fd;
   cmd[7] = (void *)NULL;
 
-  if(strcpy(name, to) == 0) {
+  if(strcmp(name, to) == 0) {
+    puts("CHECK1");
     if(isUserExist(userList, to) == FALSE) {
       puts("CHECK1");
       insertUser(&userList, to, -1);
@@ -223,7 +224,8 @@ void processChatMessage(char *to, char *from, char *msg) {
         execv(cmd[0], cmd);
       }
     }
-  } else if(strcpy(name, from) == 0) {
+  } else if(strcmp(name, from) == 0) {
+    puts("CHECK2");
     if(isUserExist(userList, from) == FALSE) {
       puts("CHECK2");
       insertUser(&userList, from, -1);
