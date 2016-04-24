@@ -26,9 +26,9 @@ int main(int argc, char **argv) {
   verboseFlag = FALSE;
   runFlag = TRUE;
 
-  openDatabase(&db, accountsFile);
+	parseOption(argc, argv, port, motd, accountsFile);
 
-  parseOption(argc, argv, port, motd, accountsFile);
+  openDatabase(&db, accountsFile);
 
   initializeUserList(&userList);
 
@@ -83,6 +83,10 @@ int main(int argc, char **argv) {
 void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFile) {
 
   int opt;
+
+  memset(port, 0, MAX_PORT_LEN);
+  memset(motd, 0, MAX_LEN);
+  memset(accountsFile, 0, MAX_FILE_LEN);
 
   while((opt = getopt(argc, argv, "hv")) != -1) {
     switch(opt) {
@@ -229,7 +233,7 @@ void * loginThread(void *argv) {
     Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0);
 
     if(authenticateUser(connfd, userName) == TRUE) {
-      if(promptPassword(connfd) == TRUE) {
+      if(promptPassword(connfd, userName) == TRUE) {
         sprintf(buf, "HI %s \r\n\r\n", userName);
         Send(connfd, buf, strlen(buf), 0);
         insertUser(&userList, userName, connfd);
@@ -258,7 +262,7 @@ int authenticateUser(int connfd, char *userName) {
     
     sscanf(buf, "IAMNEW %s \r\n\r\n", userName);
 
-    if(isAccountExist(&db, userName) == FALSE) {
+    if(isAccountExist(&db, userName) == TRUE) {
       sprintf(buf, "ERR 00 USER NAME TAKEN %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
       Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
@@ -274,7 +278,12 @@ int authenticateUser(int connfd, char *userName) {
     
     sscanf(buf, "IAM %s \r\n\r\n", userName);
     
-    if(isUserExist(userList, userName) == FALSE) {
+    if(isAccountExist(&db, userName) == FALSE) {
+      Send(connfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", strlen("ERR 01 USER NOT AVAILABLE \r\n\r\n"), 0);
+      Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
+
+      return FALSE;
+    } else if(isUserExist(userList, userName) == FALSE) {
       sprintf(buf, "AUTH %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
 
@@ -290,7 +299,7 @@ int authenticateUser(int connfd, char *userName) {
   return FALSE;
 }
 
-int promptPassword(int connfd) {
+int promptPassword(int connfd, char *userName) {
 
   char buf[MAX_LEN];
   char password[MAX_PASSWORD_LEN];
@@ -299,9 +308,10 @@ int promptPassword(int connfd) {
 
   if(strncmp(buf, "NEWPASS ", 8) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     sscanf(buf, "NEWPASS %s \r\n\r\n", password);
-    if(verifyPassword()) {
+    if(verifyPasswordCriteria(password)) {
 	    Send(connfd, "SSAPWEN \r\n\r\n", strlen("SSAPWEN \r\n\r\n"), 0);
-	    return TRUE;	
+	    insertAccount(&db, userName, password);
+	    return TRUE;
     } else {
     	Send(connfd, "ERR 02 BAD PASSWORD \r\n\r\n", strlen("ERR 00 BAD PASSWORD \r\n\r\n"), 0);
     	Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);	
@@ -316,7 +326,7 @@ int promptPassword(int connfd) {
   return FALSE;
 }
 
-int verifyPassword(char *password) {
+int verifyPasswordCriteria(char *password) {
 	
 	int i;
 	int upper = 0;
