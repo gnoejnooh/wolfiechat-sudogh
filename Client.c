@@ -144,6 +144,8 @@ int login() {
 int authenticateUser() {
   char buf[MAX_LEN];
 
+  memset(buf, 0, MAX_LEN);
+
   if(createUserFlag) {
     sprintf(buf, "IAMNEW %s \r\n\r\n", name);
   } else {
