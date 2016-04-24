@@ -84,6 +84,10 @@ void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFi
 
   int opt;
 
+  memset(port, 0, MAX_PORT_LEN);
+  memset(motd, 0, MAX_LEN);
+  memset(accountsFile, 0, MAX_FILE_LEN);
+
   while((opt = getopt(argc, argv, "hv")) != -1) {
     switch(opt) {
     case 'h':
@@ -258,7 +262,7 @@ int authenticateUser(int connfd, char *userName) {
     
     sscanf(buf, "IAMNEW %s \r\n\r\n", userName);
 
-    if(isAccountExist(&db, userName) == FALSE) {
+    if(isAccountExist(&db, userName) == TRUE) {
       sprintf(buf, "ERR 00 USER NAME TAKEN %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
       Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
@@ -274,7 +278,12 @@ int authenticateUser(int connfd, char *userName) {
     
     sscanf(buf, "IAM %s \r\n\r\n", userName);
     
-    if(isUserExist(userList, userName) == FALSE) {
+    if(isAccountExist(&db, userName) == FALSE) {
+      Send(connfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", strlen("ERR 01 USER NOT AVAILABLE \r\n\r\n"), 0);
+      Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
+
+      return FALSE;
+    } else if(isUserExist(userList, userName) == FALSE) {
       sprintf(buf, "AUTH %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
 
@@ -299,12 +308,14 @@ int promptPassword(int connfd, char *userName) {
 
   if(strncmp(buf, "NEWPASS ", 8) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     sscanf(buf, "NEWPASS %s \r\n\r\n", password);
-    if(verifyPasswordCriteria() == TRUE) {
+
+    if(verifyPasswordCriteria(password) == TRUE) {
 	    Send(connfd, "SSAPWEN \r\n\r\n", strlen("SSAPWEN \r\n\r\n"), 0);
+	    insertAccount(&db, userName, password);
 	    return TRUE;
     } else {
     	Send(connfd, "ERR 02 BAD PASSWORD \r\n\r\n", strlen("ERR 00 BAD PASSWORD \r\n\r\n"), 0);
-    	Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);	
+    	Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
       return FALSE;
     }
   } else if (strncmp(buf, "PASS ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
@@ -312,10 +323,12 @@ int promptPassword(int connfd, char *userName) {
     
     if(verifyPassword(&db, userName, password) == TRUE) {
       Send(connfd, "SSAP \r\n\r\n", strlen("SSAP \r\n\r\n"), 0);
+      return TRUE;
     } else {
       Send(connfd, "ERR 02 BAD PASSWORD \r\n\r\n", strlen("ERR 02 BAD PASSWORD \r\n\r\n"), 0);
+      Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
+      return FALSE;
     }
-    return TRUE;
   }
 
   return FALSE;

@@ -52,7 +52,8 @@ void * communicationThread(void *argv);
 
 int authenticateUser(int connfd, char *userName);
 int promptPassword(int connfd, char *userName);
-int verifyPasswordCriteria();
+int verifyPasswordCriteria(char *password);
+
 
 void receiveTimeMessage(int connfd, time_t begin);
 void receiveListuMessage(int connfd);

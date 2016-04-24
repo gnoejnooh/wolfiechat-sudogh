@@ -116,7 +116,7 @@ void printAllAccountsInfo(sqlite3 **db) {
 }
 
 int isAccountExistCallback(void *data, int argc, char **argv, char **azColName) {
-	if(strcmp(argv[0], "0") == 0) {
+  if(strcmp(argv[0], "0") == 0) {
 		*(int *)data = FALSE;
 	} else {
 		*(int *)data = TRUE;
