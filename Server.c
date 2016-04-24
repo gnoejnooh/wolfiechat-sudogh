@@ -31,7 +31,6 @@ int main(int argc, char **argv) {
   memset(accountsFile, 0, MAX_FILE_LEN);
 
   openDatabase(&db, accountsFile);
-  printAllAccountsInfo(&db);
 
   parseOption(argc, argv, port, motd, accountsFile);
 

@@ -89,7 +89,7 @@ void printAllUserInfo(UserList userList) {
 
 	for(i=0; i<userList.count; i++) {
 		next = cur->next;
-		printf("USER[%d]: %s\n", i+1, cur->userName);
+		printf("USERNAME: %-20s\n", cur->userName);
 		cur = next;
 	}
 }

@@ -99,10 +99,6 @@ int isAccountExistCallback(void *data, int argc, char **argv, char **azColName) 
 }
 
 int printAllAccountsInfoCallback(void *data, int argc, char **argv, char **azColName) {
-	int i;
-	for(i=0; i<argc; i++) {
-		printf("%s: %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-	}
-	printf("\n");
+	printf("USERNAME: %-20s & PASSWORD: %-20s\n", argv[1], argv[2]);
 	return 0;
 }
