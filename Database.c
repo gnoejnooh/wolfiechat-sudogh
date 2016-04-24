@@ -52,6 +52,33 @@ int isAccountExist(sqlite3 **db, char *userName) {
   return accountExist;
 }
 
+int verifyPassword(sqlite3 **db, char *userName, char *password) {
+	int rc;
+	char *sql = NULL;
+	char *errMsg;
+
+	char dbPassword[MAX_PASSWORD_LEN];
+	int verified = FALSE;
+
+	sql = sqlite3_mprintf("SELECT PASSWORD FROM USERS WHERE name = %Q;", userName);
+
+	rc = sqlite3_exec(*db, sql, verifyPasswordCallback, dbPassword, &errMsg);
+
+	if(strcmp(password, dbPassword) == 0) {
+		verified = TRUE;
+	}
+
+  sqlite3_free(sql);
+
+  if(rc != SQLITE_OK) {
+    printError("Can't execute query\n");
+    sqlite3_close(*db);
+    exit(EXIT_FAILURE);
+  }
+
+  return verified;
+}
+
 void insertAccount(sqlite3 **db, char *userName, char *password) {
   int rc;
   char *sql = NULL;
@@ -95,6 +122,11 @@ int isAccountExistCallback(void *data, int argc, char **argv, char **azColName) 
 		*(int *)data = TRUE;
 	}
 
+	return 0;
+}
+
+int verifyPasswordCallback(void *data, int argc, char **argv, char **azColName) {
+	strcpy((char *)data, argv[0]);
 	return 0;
 }
 

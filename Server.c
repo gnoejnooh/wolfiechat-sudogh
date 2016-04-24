@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   verboseFlag = FALSE;
   runFlag = TRUE;
 
-	parseOption(argc, argv, port, motd, accountsFile);
+  parseOption(argc, argv, port, motd, accountsFile);
 
   openDatabase(&db, accountsFile);
 
@@ -308,7 +308,8 @@ int promptPassword(int connfd, char *userName) {
 
   if(strncmp(buf, "NEWPASS ", 8) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     sscanf(buf, "NEWPASS %s \r\n\r\n", password);
-    if(verifyPasswordCriteria(password)) {
+
+    if(verifyPasswordCriteria(password) == TRUE) {
 	    Send(connfd, "SSAPWEN \r\n\r\n", strlen("SSAPWEN \r\n\r\n"), 0);
 	    insertAccount(&db, userName, password);
 	    return TRUE;
@@ -318,8 +319,12 @@ int promptPassword(int connfd, char *userName) {
     }
   } else if (strncmp(buf, "PASS ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     sscanf(buf, "PASS %s \r\n\r\n", password);
-    //TODO: CHECK PASSWORD IN THE DATABASE WITH MATCHING USERNAME
-    Send(connfd, "SSAP \r\n\r\n", strlen("SSAP \r\n\r\n"), 0);
+    
+    if(verifyPassword(&db, userName, password) == TRUE) {
+      Send(connfd, "SSAP \r\n\r\n", strlen("SSAP \r\n\r\n"), 0);
+    } else {
+      Send(connfd, "ERR 02 BAD PASSWORD \r\n\r\n", strlen("ERR 02 BAD PASSWORD \r\n\r\n"), 0);
+    }
     return TRUE;
   }
 
