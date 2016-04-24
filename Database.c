@@ -119,11 +119,12 @@ void printAllAccountsInfo(sqlite3 **db) {
 }
 
 void getSalt(char *salt) {
-
 	unsigned char digest[MAX_SALT_LEN];
+	int i;
+
 	RAND_bytes(digest, MAX_SALT_LEN);
 
-	for (int i = 0; i < MAX_SALT_LEN; i++) {
+	for (i=0; i<MAX_SALT_LEN; i++) {
     sprintf(&salt[i*2], "%02x", (unsigned int)digest[i]);
   }
 }
@@ -131,12 +132,17 @@ void getSalt(char *salt) {
 void getHash(char *hash, char *password, char *salt) {
 	SHA256_CTX c;
 	unsigned char digest[SHA256_DIGEST_LENGTH];
+	int i;
+
+	for(i=0; i<strlen(salt); i++) {
+  	password[i] = password[i] & salt[i];
+  }
 
 	SHA256_Init(&c);
 	SHA256_Update(&c, password, strlen(password));
 	SHA256_Final(digest, &c);
 
-  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+  for (i=0; i<SHA256_DIGEST_LENGTH; i++) {
     sprintf(&hash[i*2], "%02x", (unsigned int)digest[i]);
   }
 }

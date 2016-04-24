@@ -11,7 +11,7 @@
 #define MAX_LEN				1024
 #define MAX_PORT_LEN		8
 #define MAX_NAME_LEN		16
-#define MAX_PASSWORD_LEN	255
+#define MAX_PASSWORD_LEN	256
 #define MAX_SALT_LEN		64
 #define MAX_FILE_LEN		256
 #define MAX_HOSTNAME_LEN	256
