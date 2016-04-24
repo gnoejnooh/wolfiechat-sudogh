@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include "Constant.h"
 
+char stream[MAX_BUF_LEN];
+
 int verboseFlag;
 
 void Send(int socket, const void *buffer, size_t length, int flags);

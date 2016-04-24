@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
       connfd = malloc(sizeof(int));
     
       if((*connfd = accept(listenfd, (struct sockaddr *)connAddr, &connLen)) != -1) {
-        printf("%d\n", *connfd);
         loginThreadParam->connfd = connfd;
         strcpy(loginThreadParam->motd, motd);
         pthread_create(&tid, NULL, loginThread, loginThreadParam);
@@ -231,20 +230,22 @@ void * loginThread(void *argv) {
 
   if(strcmp(buf, "WOLFIE \r\n\r\n") == 0) {
     Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0);
-    if(authenticateUser(connfd, userName) == TRUE && promptPassword(connfd) == TRUE) {
-		memset(buf, 0, MAX_LEN);
-		sprintf(buf, "HI %s \r\n\r\n", userName);
-		Send(connfd, buf, strlen(buf), 0);
-		insertUser(&userList, userName, connfd);
+    if(authenticateUser(connfd, userName) == TRUE) {
+      if(promptPassword(connfd) == TRUE) {
+        memset(buf, 0, MAX_LEN);
+        sprintf(buf, "HI %s \r\n\r\n", userName);
+        Send(connfd, buf, strlen(buf), 0);
+        insertUser(&userList, userName, connfd);
 
-		memset(buf, 0, MAX_LEN);
-		sprintf(buf, "MOTD %s \r\n\r\n", motd);
-		Send(connfd, buf, strlen(buf), 0);
+        memset(buf, 0, MAX_LEN);
+        sprintf(buf, "MOTD %s \r\n\r\n", motd);
+        Send(connfd, buf, strlen(buf), 0);
 
-      CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
-      communicationThreadParam->connfd = &connfd;
-      strcpy(communicationThreadParam->userName, userName);
-      pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
+        CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
+        communicationThreadParam->connfd = &connfd;
+        strcpy(communicationThreadParam->userName, userName);
+        pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
+      }
     }
   }
 
@@ -291,8 +292,7 @@ int promptPassword(int connfd) {
   Recv(connfd, buf, MAX_LEN, 0);
 
   if(strncmp(buf, "NEWPASS ", 8) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-    strcpy(password, &buf[8]);
-    password[strlen(password)-5] = '\0';
+    sscanf(buf, "NEWPASS %s \r\n\r\n", password);
     if(verifyPassword()) {
 	    Send(connfd, "SSAPWEN \r\n\r\n", strlen("SSAPWEN \r\n\r\n"), 0);
 	    return TRUE;	
@@ -301,8 +301,7 @@ int promptPassword(int connfd) {
     	Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);	
     }
   } else if (strncmp(buf, "PASS ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-    strcpy(password, &buf[5]);
-    password[strlen(password)-5] = '\0';
+    sscanf(buf, "PASS %s \r\n\r\n", password);
     //TODO: CHECK PASSWORD IN THE DATABASE WITH MATCHING USERNAME
     Send(connfd, "SSAP \r\n\r\n", strlen("SSAP \r\n\r\n"), 0);
     return TRUE;

@@ -202,7 +202,6 @@ int messageOfTheDay() {
     Recv(clientfd, buf, MAX_LEN, 0);
 
     if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-      puts("TEST");
       sscanf(buf, "MOTD %s \r\n\r\n", motd);
       printf("%s\n", motd); 
 
