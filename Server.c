@@ -301,10 +301,11 @@ int promptPassword(int connfd, char *userName) {
     sscanf(buf, "NEWPASS %s \r\n\r\n", password);
     if(verifyPasswordCriteria() == TRUE) {
 	    Send(connfd, "SSAPWEN \r\n\r\n", strlen("SSAPWEN \r\n\r\n"), 0);
-	    return TRUE;	
+	    return TRUE;
     } else {
     	Send(connfd, "ERR 02 BAD PASSWORD \r\n\r\n", strlen("ERR 00 BAD PASSWORD \r\n\r\n"), 0);
     	Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);	
+      return FALSE;
     }
   } else if (strncmp(buf, "PASS ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     sscanf(buf, "PASS %s \r\n\r\n", password);
