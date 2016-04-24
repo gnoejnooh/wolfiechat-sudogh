@@ -49,6 +49,10 @@ void printUsage();
 void * loginThread(void *argv);
 void * communicationThread(void *argv);
 
+int authenticateUser(int connfd, char *userName);
+int promptPassword(int connfd);
+int verifyPassword();
+
 void receiveTimeMessage(int connfd, time_t begin);
 void receiveListuMessage(int connfd);
 void receiveChatMessage(int connfd, char *line);
