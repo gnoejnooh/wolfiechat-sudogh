@@ -35,3 +35,9 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 		printf("\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
 	}
 }
+
+void printError(char *msg) {
+  fprintf(stderr, "\x1B[1;31mERROR: ");
+  fprintf(stderr, "%s", msg);
+  fprintf(stderr, "\x1B[0m");
+}

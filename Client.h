@@ -48,8 +48,6 @@ int verifyChatCommand(char *line, char *to, char *msg);
 
 void printUsage();
 
-void printError(char *msg);
-
 void sigintHandler(int signum);
 void sigchldHandler(int signum);
 

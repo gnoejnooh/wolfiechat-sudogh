@@ -15,9 +15,9 @@
 #include <sys/wait.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
-#include <sqlite3.h>
 #include "Constant.h"
 #include "Wrapper.h"
+#include "Database.h"
 #include "User.h"
 
 UserList userList;
@@ -37,8 +37,6 @@ typedef struct communicationThreadParam {
 	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
 
-void openDatabase(sqlite3 *db, char *accountsFile);
-
 void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFile);
 int openListenFd(char *port);
 void executeCommand();
@@ -47,8 +45,6 @@ void shutdownCommand();
 
 void printPrompt();
 void printUsage();
-
-void printError(char *msg);
 
 void * loginThread(void *argv);
 void * communicationThread(void *argv);

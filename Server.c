@@ -30,7 +30,8 @@ int main(int argc, char **argv) {
   memset(motd, 0, MAX_LEN);
   memset(accountsFile, 0, MAX_FILE_LEN);
 
-  openDatabase(db, accountsFile);
+  openDatabase(&db, accountsFile);
+  printAllAccountsInfo(&db);
 
   parseOption(argc, argv, port, motd, accountsFile);
 
@@ -83,48 +84,6 @@ int main(int argc, char **argv) {
   free(connAddr);
   freeUserList(&userList);
   return EXIT_SUCCESS;
-}
-
-void openDatabase(sqlite3 *db, char *accountsFile) {
-  int rc;
-  char *sql = NULL;
-  char *errMsg = NULL;
-
-  if(strlen(accountsFile) != 0) {
-    rc = sqlite3_open(accountsFile, &db);
-  } else {
-    rc = sqlite3_open("data.db", &db);
-  }
-
-  if(rc != SQLITE_OK) {
-    printError("Can't open database\n");
-    sqlite3_close(db);
-    exit(EXIT_FAILURE);
-  }
-
-  sql = "CREATE TABLE IF NOT EXISTS USERS("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "name VARCHAR(16) NOT NULL,"
-        "password VARCHAR(255) NOT NULL);";
-        
-  rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
-
-  if(rc != SQLITE_OK) {
-    printf("Can't create table: %s\n", errMsg);
-    sqlite3_close(db);
-    exit(EXIT_FAILURE);
-  }
-
-  sql = "INSERT INTO USERS VALUES(NULL, 'gy', 'temp');"
-        "INSERT INTO USERS VALUES(NULL, 'jh', 'temp');";
-
-  rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
-
-  if(rc != SQLITE_OK) {
-    printf("Can't create table: %s\n", errMsg);
-    sqlite3_close(db);
-    exit(EXIT_FAILURE);
-  }
 }
 
 void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFile) {
@@ -249,12 +208,6 @@ void printUsage() {
   fprintf(stderr, "-v            Verbose print all incoming and outgoing protocol verbs & content.\n");
   fprintf(stderr, "PORT_NUMBER   Port number to listen on.\n");
   fprintf(stderr, "MOTD          Message to display to the client when they connect.\n");
-}
-
-void printError(char *msg) {
-  fprintf(stderr, "\x1B[1;31mERROR: ");
-  fprintf(stderr, "%s", msg);
-  fprintf(stderr, "\x1B[0m");
 }
 
 void * loginThread(void *argv) {

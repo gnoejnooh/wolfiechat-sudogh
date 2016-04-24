@@ -426,12 +426,6 @@ void printUsage() {
   fprintf(stderr, "SERVER_PORT  The port to connect to\n");
 }
 
-void printError(char *msg) {
-  fprintf(stderr, "\x1B[1;31mERROR: ");
-  fprintf(stderr, "%s", msg);
-  fprintf(stderr, "\x1B[0m");
-}
-
 void sigintHandler(int signum) {
   logoutCommand();
   exit(signum);
