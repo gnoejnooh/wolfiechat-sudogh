@@ -168,6 +168,6 @@ int verifyPasswordCallback(void *data, int argc, char **argv, char **azColName) 
 }
 
 int printAllAccountsInfoCallback(void *data, int argc, char **argv, char **azColName) {
-	printf("USERNAME: %-20s & PASSWORD: %-20s\n", argv[1], argv[2]);
+	printf("USERNAME: %s\nPASSWORD: %s\n\n", argv[1], argv[2]);
 	return 0;
 }

@@ -358,7 +358,7 @@ int verifyPasswordCriteria(char *password) {
 		}
 	}
 
-	if(strlen(password) > 5 && upper && symbol && number) {
+	if(strlen(password) >= 5 && upper && symbol && number) {
 		return TRUE;
 	}
 
