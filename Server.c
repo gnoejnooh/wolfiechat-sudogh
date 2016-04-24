@@ -8,13 +8,16 @@ int main(int argc, char **argv) {
 
   char port[MAX_PORT_LEN];
   char motd[MAX_LEN];
+  char accountsFile[MAX_FILE_LEN];
 
   struct sockaddr_in *connAddr = malloc(sizeof(struct sockaddr_in));
   socklen_t connLen;
 
   struct epoll_event event;
 
-  pthread_t tid; 
+  pthread_t tid;
+
+  sqlite3 *db = NULL;
 
   LoginThreadParam *loginThreadParam = NULL;
 
@@ -23,7 +26,13 @@ int main(int argc, char **argv) {
   verboseFlag = FALSE;
   runFlag = TRUE;
 
-  parseOption(argc, argv, port, motd);
+  memset(port, 0, MAX_PORT_LEN);
+  memset(motd, 0, MAX_LEN);
+  memset(accountsFile, 0, MAX_FILE_LEN);
+
+  openDatabase(db, accountsFile);
+
+  parseOption(argc, argv, port, motd, accountsFile);
 
   initializeUserList(&userList);
 
@@ -69,13 +78,56 @@ int main(int argc, char **argv) {
     }
   }
 
+  sqlite3_close(db);
   close(listenfd);
   free(connAddr);
   freeUserList(&userList);
   return EXIT_SUCCESS;
 }
 
-void parseOption(int argc, char **argv, char *port, char *motd) {
+void openDatabase(sqlite3 *db, char *accountsFile) {
+  int rc;
+  char *sql = NULL;
+  char *errMsg = NULL;
+
+  if(strlen(accountsFile) != 0) {
+    rc = sqlite3_open(accountsFile, &db);
+  } else {
+    rc = sqlite3_open("data.db", &db);
+  }
+
+  if(rc != SQLITE_OK) {
+    printError("Can't open database\n");
+    sqlite3_close(db);
+    exit(EXIT_FAILURE);
+  }
+
+  sql = "CREATE TABLE IF NOT EXISTS USERS("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "name VARCHAR(16) NOT NULL,"
+        "password VARCHAR(255) NOT NULL);";
+        
+  rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+
+  if(rc != SQLITE_OK) {
+    printf("Can't create table: %s\n", errMsg);
+    sqlite3_close(db);
+    exit(EXIT_FAILURE);
+  }
+
+  sql = "INSERT INTO USERS VALUES(NULL, 'gy', 'temp');"
+        "INSERT INTO USERS VALUES(NULL, 'jh', 'temp');";
+
+  rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+
+  if(rc != SQLITE_OK) {
+    printf("Can't create table: %s\n", errMsg);
+    sqlite3_close(db);
+    exit(EXIT_FAILURE);
+  }
+}
+
+void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFile) {
 
   int opt;
 
@@ -99,10 +151,14 @@ void parseOption(int argc, char **argv, char *port, char *motd) {
   if(optind < argc && (argc - optind) == 2) {
     strcpy(port, argv[optind++]);
     strcpy(motd, argv[optind++]);
+  } else if(optind < argc && (argc - optind) == 3) {
+    strcpy(port, argv[optind++]);
+    strcpy(motd, argv[optind++]);
+    strcpy(accountsFile, argv[optind++]);
   } else {
     if(argc - optind < 2) {
       printError("Missing arguments\n");
-    } else {
+    } else if(argc - optind > 3) {
       printError("Too many arguments\n");
     }
 

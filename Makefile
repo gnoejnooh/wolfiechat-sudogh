@@ -10,10 +10,10 @@ chat: Chat.c Wrapper.o
 	gcc -Wall -Werror -o chat Chat.c Wrapper.o
 
 server: Server.c User.o Wrapper.o
-	gcc -Wall -Werror -pthread -o server Server.c User.o Wrapper.o
+	gcc -Wall -Werror -o server Server.c User.o Wrapper.o -pthread -lsqlite3 
 
 client: Client.c User.o Wrapper.o
-	gcc -Wall -Werror -pthread -o client Client.c User.o Wrapper.o
+	gcc -Wall -Werror -o client Client.c User.o Wrapper.o -pthread 
 
 clean:
 	rm -f *~ *.o server client chat
