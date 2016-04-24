@@ -10,8 +10,10 @@ void Send(int socket, const void *buffer, size_t length, int flags) {
 
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
-		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
-			msg[strlen(msg)-5] = '\0';
+		for(int i=0; i<strlen(msg); i++) {
+			if(msg[i] == '\n' || msg[i] == '\r') {
+				msg[i] = ' ';
+			}
 		}
 		printf("\x1B[1;34mOutgoing: %s\x1B[0m\n", msg);
 	}
@@ -25,28 +27,32 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 
 	memset(buffer, 0, length);
 
-	if((ch = strstr(stream, "\r\n\r\n")) != NULL) {
+	if((ch = strstr(localBuffer, "\r\n\r\n")) != NULL) {
+	
 		strcpy(temp, &ch[4]);
 		ch[4] = '\0';
-		strcpy(buffer, stream);
-		strcpy(stream, temp);
+		strcpy(buffer, localBuffer);
+		strcpy(localBuffer, temp);
 	} else {
+
 		if((n = recv(socket, buffer, length, flags)) == 0) {
 			return;
 		}
 
-		strcat(stream, (char *)buffer);
-		ch = strstr(stream, "\r\n\r\n");
+		strcat(localBuffer, (char *)buffer);
+		ch = strstr(localBuffer, "\r\n\r\n");
 		strcpy(temp, &ch[4]);
 		ch[4] = '\0';
-		strcpy(buffer, stream);
-		strcpy(stream, temp);
+		strcpy(buffer, localBuffer);
+		strcpy(localBuffer, temp);
 	}
 
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
-		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
-			msg[strlen(msg)-5] = '\0';
+		for(int i=0; i<strlen(msg); i++) {
+			if(msg[i] == '\n' || msg[i] == '\r') {
+				msg[i] = ' ';
+			}
 		}
 		printf("\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
 	}

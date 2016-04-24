@@ -26,10 +26,6 @@ int main(int argc, char **argv) {
   verboseFlag = FALSE;
   runFlag = TRUE;
 
-  memset(port, 0, MAX_PORT_LEN);
-  memset(motd, 0, MAX_LEN);
-  memset(accountsFile, 0, MAX_FILE_LEN);
-
   openDatabase(&db, accountsFile);
 
   parseOption(argc, argv, port, motd, accountsFile);
@@ -229,15 +225,15 @@ void * loginThread(void *argv) {
   Recv(connfd, buf, MAX_LEN, 0);
 
   if(strcmp(buf, "WOLFIE \r\n\r\n") == 0) {
+    
     Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0);
+
     if(authenticateUser(connfd, userName) == TRUE) {
       if(promptPassword(connfd) == TRUE) {
-        memset(buf, 0, MAX_LEN);
         sprintf(buf, "HI %s \r\n\r\n", userName);
         Send(connfd, buf, strlen(buf), 0);
         insertUser(&userList, userName, connfd);
 
-        memset(buf, 0, MAX_LEN);
         sprintf(buf, "MOTD %s \r\n\r\n", motd);
         Send(connfd, buf, strlen(buf), 0);
 
@@ -259,25 +255,35 @@ int authenticateUser(int connfd, char *userName) {
   Recv(connfd, buf, MAX_LEN, 0);
 
   if(strncmp(buf, "IAMNEW ", 7) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-    strcpy(userName, &buf[7]);
-    userName[strlen(userName)-5] = '\0';
-    //TODO: CHECK DATABASE FOR USERNAME
-    memset(buf, 0, MAX_LEN);
-    sprintf(buf, "HINEW %s \r\n\r\n", userName);
-    Send(connfd, buf, strlen(buf), 0);
-    return TRUE;
-  } else if (strncmp(buf, "IAM ", 4) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-    strcpy(userName, &buf[4]);
-    userName[strlen(userName)-5] = '\0';
     
-    if(!isUserExist(userList, userName)) {
-      memset(buf, 0, MAX_LEN);
+    sscanf(buf, "IAMNEW %s \r\n\r\n", userName);
+
+    if(isAccountExist(&db, userName) == FALSE) {
+      sprintf(buf, "ERR 00 USER NAME TAKEN %s \r\n\r\n", userName);
+      Send(connfd, buf, strlen(buf), 0);
+      Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
+
+      return FALSE;
+    } else {
+      sprintf(buf, "HINEW %s \r\n\r\n", userName);
+      Send(connfd, buf, strlen(buf), 0);
+
+      return TRUE;
+    }
+  } else if (strncmp(buf, "IAM ", 4) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+    
+    sscanf(buf, "IAM %s \r\n\r\n", userName);
+    
+    if(isUserExist(userList, userName) == FALSE) {
       sprintf(buf, "AUTH %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
+
       return TRUE;
     } else {
       Send(connfd, "ERR 00 USER NAME TAKEN \r\n\r\n", strlen("ERR 00 USER NAME TAKEN \r\n\r\n"), 0);
       Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
+
+      return FALSE;
     }
   }
 
@@ -383,7 +389,6 @@ void receiveListuMessage(int connfd) {
   char buf[MAX_LISTU_LEN];
 
   User *cur = userList.head;
-  memset(buf, 0, MAX_LISTU_LEN);
 
   sprintf(buf, "UTSIL");
 
@@ -432,7 +437,6 @@ void receiveByeMessage(int connfd, char *userName) {
   char buf[MAX_LEN];
 
   User *cur;
-  memset(buf, 0, MAX_LEN);
 
   sprintf(buf, "UOFF %s \r\n\r\n", userName);
 

@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include "Constant.h"
 
-char stream[MAX_BUF_LEN];
+char localBuffer[MAX_BUF_LEN];
 
 int verboseFlag;
 

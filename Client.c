@@ -126,6 +126,7 @@ int openClientFd(char *hostname, char *port) {
 
 int login() {
   char buf[MAX_LEN];
+  char motd[MAX_LEN];
 
   int loginSucceed = FALSE;
   
@@ -133,8 +134,21 @@ int login() {
   Recv(clientfd, buf, MAX_LEN, 0);
 
   if(strcmp(buf, "EIFLOW \r\n\r\n") == 0) {
-    if(authenticateUser() == TRUE && promptPassword() == TRUE) {
-      loginSucceed = messageOfTheDay();
+    if(authenticateUser() == TRUE) {
+      if(promptPassword() == TRUE) {
+        Recv(clientfd, buf, MAX_LEN, 0);
+
+        if(strncmp(buf, "HI ", 3) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+          Recv(clientfd, buf, MAX_LEN, 0);
+
+          if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+            sscanf(buf, "MOTD %s \r\n\r\n", motd);
+            printf("%s\n", motd); 
+
+            loginSucceed = TRUE;
+          }
+        }
+      }
     }
   }
 
@@ -143,8 +157,6 @@ int login() {
 
 int authenticateUser() {
   char buf[MAX_LEN];
-
-  memset(buf, 0, MAX_LEN);
 
   if(createUserFlag) {
     sprintf(buf, "IAMNEW %s \r\n\r\n", name);
@@ -170,7 +182,6 @@ int promptPassword() {
   char *pass;
   char buf[MAX_LEN];
   
-  memset(buf, 0, MAX_LEN);
   pass = getpass("Enter Password: ");
   
   if(createUserFlag) {
@@ -188,25 +199,6 @@ int promptPassword() {
     }
   } else {
     Recv(clientfd, buf, MAX_LEN, 0);
-  }
-  return FALSE;
-}
-
-int messageOfTheDay() {
-  char buf[MAX_LEN];
-  char motd[MAX_LEN];
-
-  Recv(clientfd, buf, MAX_LEN, 0);
-
-  if(strncmp(buf, "HI ", 3) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-    Recv(clientfd, buf, MAX_LEN, 0);
-
-    if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-      sscanf(buf, "MOTD %s \r\n\r\n", motd);
-      printf("%s\n", motd); 
-
-      return TRUE;
-    }
   }
   return FALSE;
 }
@@ -243,15 +235,9 @@ void receiveMessage() {
 }
 
 void receiveChatMessage(char *line) {
-  char buf[MAX_LEN];
   char to[MAX_NAME_LEN];
   char from[MAX_NAME_LEN];
   char msg[MAX_LEN];
-
-  memset(buf, 0, MAX_LEN);
-  memset(to, 0, MAX_NAME_LEN);
-  memset(from, 0, MAX_NAME_LEN);
-  memset(msg, 0, MAX_LEN);
 
   sscanf(line, "MSG %s %s %1024[^\n]", to, from, msg);
 
@@ -268,8 +254,6 @@ void processChatMessage(char *to, char *from, char *msg) {
   char fd[MAX_FD_LEN];
 
   char userName[MAX_NAME_LEN];
-
-  memset(fd, 0, MAX_FD_LEN);
 
   if(strcmp(name, to) == 0) {
     strcpy(userName, from);
@@ -295,7 +279,6 @@ void processChatMessage(char *to, char *from, char *msg) {
       execv(cmd[0], cmd);
     } else {
       close(socketfd[1]);
-      memset(buf, 0, MAX_LEN);
       
       if(strcmp(name, to) == 0) {
         sprintf(buf, "< %s", msg);
@@ -313,15 +296,8 @@ void processChatMessage(char *to, char *from, char *msg) {
             deleteUser(&userList, userName);
             break;
           }
-          
-          if(!strcmp(msg, "/close")) {
-            deleteUser(&userList, userName);
-            kill(pid, SIGKILL);
-            break;
-          }
 
           if(strlen(msg) != 0) {
-            memset(buf, 0, MAX_LEN);
             sprintf(buf, "MSG %s %s %s \r\n\r\n", to, from, msg);
             Send(clientfd, buf, MAX_LEN, 0);
           }
@@ -332,8 +308,6 @@ void processChatMessage(char *to, char *from, char *msg) {
 
     User *user = findUser(userList, userName);
     int connfd = user->connfd;
-
-    memset(buf, 0, MAX_LEN);
 
     if(strcmp(name, to) == 0) {
       sprintf(buf, "< %s", msg);
@@ -380,6 +354,7 @@ void listuCommand() {
     token = strtok(buf, " \r\n");
     token = strtok(NULL, " \r\n");
     while(token != NULL) {
+      printf("USERNAME: %s\n", token);
       token = strtok(NULL, " \r\n");
     }
   }
@@ -389,10 +364,6 @@ void chatCommand(char *line) {
 	char buf[MAX_LEN];
   char to[MAX_NAME_LEN];
   char msg[MAX_LEN];
-
-  memset(buf, 0, MAX_LEN);
-  memset(to, 0, MAX_NAME_LEN);
-  memset(msg, 0, MAX_LEN);
 
 	if(verifyChatCommand(line, to, msg) == FALSE) {
     printError("Invalid format\n");

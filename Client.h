@@ -34,7 +34,6 @@ void receiveMessage();
 
 int authenticateUser();
 int promptPassword();
-int messageOfTheDay();
 
 void receiveChatMessage(char *line);
 void processChatMessage(char *to, char *from, char *msg);
