@@ -12,6 +12,7 @@ int verboseFlag;
 
 void Send(int socket, const void *buffer, size_t length, int flags);
 void Recv(int socket, void *buffer, size_t length, int flags);
+void RecvChat(int socket, void *buffer, size_t length, int flags);
 
 void printError(char *msg);
 

@@ -276,6 +276,7 @@ void processChatMessage(char *to, char *from, char *msg) {
     insertUser(&userList, userName, socketfd[0]);
 
     if((pid = fork()) == 0) {
+      close(socketfd[0]);
       execv(cmd[0], cmd);
     } else {
       close(socketfd[1]);
@@ -290,7 +291,7 @@ void processChatMessage(char *to, char *from, char *msg) {
 
       if((pid = fork()) == 0) {
         while(TRUE) {
-          Recv(socketfd[0], msg, MAX_LEN, 0);
+          RecvChat(socketfd[0], msg, MAX_LEN, 0);
 
           if(strcmp(msg, "/close") == 0) {
             deleteUser(&userList, userName);
@@ -317,9 +318,6 @@ void processChatMessage(char *to, char *from, char *msg) {
 
     Send(connfd, buf, MAX_LEN, 0);
   }
-
-  close(socketfd[0]);
-  close(socketfd[1]);
 }
 
 void timeCommand() {
