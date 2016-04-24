@@ -284,8 +284,7 @@ void * communicationThread(void *argv) {
     } else if(strncmp(buf, "MSG", 3) == 0) {
       receiveChatMessage(connfd, buf);
     } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
-      Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
-      deleteUser(&userList, userName);
+      receiveByeMessage(connfd, userName);
       break;
     }
   }
@@ -349,6 +348,25 @@ void receiveChatMessage(int connfd, char *line) {
       userConnfd = user->connfd;
       Send(userConnfd, line, MAX_LEN, 0);
     }
+  }
+}
+
+void receiveByeMessage(int connfd, char *userName) {
+  char buf[MAX_LEN];
+
+  User *cur;
+  memset(buf, 0, MAX_LEN);
+
+  sprintf(buf, "UOFF %s \r\n\r\n", userName);
+
+  Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
+  deleteUser(&userList, userName);
+
+  cur = userList.head;
+
+  while(cur != NULL) {
+    Send(cur->connfd, buf, MAX_LEN, 0);
+    cur = cur->next;
   }
 }
 

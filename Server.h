@@ -53,6 +53,7 @@ void * communicationThread(void *argv);
 void receiveTimeMessage(int connfd, time_t begin);
 void receiveListuMessage(int connfd);
 void receiveChatMessage(int connfd, char *line);
+void receiveByeMessage(int connfd, char *userName);
 
 void sigintHandler(int signum);
 

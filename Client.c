@@ -208,7 +208,7 @@ void processChatMessage(char *to, char *from, char *msg) {
   int pid;
   char buf[MAX_LEN];
 
-  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35+100+100"};
+  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35"};
   char fd[MAX_FD_LEN];
 
   char userName[MAX_NAME_LEN];
@@ -234,10 +234,9 @@ void processChatMessage(char *to, char *from, char *msg) {
     cmd[8] = (void *)NULL;
 
     insertUser(&userList, userName, socketfd[0]);
+
     if((pid = fork()) == 0) {
-      close(socketfd[0]);
       execv(cmd[0], cmd);
-      exit(EXIT_SUCCESS);
     } else {
       close(socketfd[1]);
       memset(buf, 0, MAX_LEN);
@@ -249,9 +248,15 @@ void processChatMessage(char *to, char *from, char *msg) {
       }
 
       Send(socketfd[0], buf, MAX_LEN, 0);
+
       if((pid = fork()) == 0) {
         while(TRUE) {
           Recv(socketfd[0], msg, MAX_LEN, 0);
+
+          if(strcmp(msg, "/close") == 0) {
+            deleteUser(&userList, userName);
+            break;
+          }
           
           if(strlen(msg) != 0) {
             memset(buf, 0, MAX_LEN);
@@ -259,7 +264,6 @@ void processChatMessage(char *to, char *from, char *msg) {
             Send(clientfd, buf, MAX_LEN, 0);
           }
         }
-        exit(EXIT_SUCCESS);
       }
     }
   } else {
@@ -277,6 +281,9 @@ void processChatMessage(char *to, char *from, char *msg) {
 
     Send(connfd, buf, MAX_LEN, 0);
   }
+
+  close(socketfd[0]);
+  close(socketfd[1]);
 }
 
 void timeCommand() {
