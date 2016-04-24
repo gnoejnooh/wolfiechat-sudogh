@@ -24,12 +24,17 @@ UserList userList;
 
 int runFlag;
 extern int verboseFlag;
+int createUserFlag;
 
 void parseOption(int argc, char **argv, char *hostname, char *port);
 int openClientFd(char *hostname, char *port);
 int login();
 void executeCommand();
 void receiveMessage();
+
+int authenticateUser();
+int promptPassword();
+int messageOfTheDay();
 
 void receiveChatMessage(char *line);
 void processChatMessage(char *to, char *from, char *msg);

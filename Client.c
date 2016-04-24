@@ -10,6 +10,7 @@ int main(int argc, char **argv) {
 
   runFlag = TRUE;
   verboseFlag = FALSE;
+  createUserFlag = FALSE;
 
   signal(SIGINT, sigintHandler);
   signal(SIGCHLD, sigchldHandler);
@@ -62,6 +63,7 @@ void parseOption(int argc, char **argv, char *hostname, char *port) {
       exit(EXIT_SUCCESS);
       break;
     case 'c':
+      createUserFlag = TRUE;
       break;
     case 'v':
       verboseFlag = TRUE;
@@ -124,7 +126,6 @@ int openClientFd(char *hostname, char *port) {
 
 int login() {
   char buf[MAX_LEN];
-  char motd[MAX_LEN];
 
   int loginSucceed = FALSE;
   
@@ -132,27 +133,80 @@ int login() {
   Recv(clientfd, buf, MAX_LEN, 0);
 
   if(strcmp(buf, "EIFLOW \r\n\r\n") == 0) {
-    sprintf(buf, "IAM %s \r\n\r\n", name);
-
-    Send(clientfd, buf, strlen(buf), 0);
-    Recv(clientfd, buf, MAX_LEN, 0);
-
-    if(strncmp(buf, "HI ", 3) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-      Recv(clientfd, buf, MAX_LEN, 0);
-
-      if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-        sscanf(buf, "MOTD %s \r\n\r\n", motd);
-        printf("%s\n", motd); 
-
-        loginSucceed = TRUE;
-      }
-    } else if(strcmp(buf, "ERR 00 USER NAME TAKEN \r\n\r\n") == 0) {
-      Recv(clientfd, buf, MAX_LEN, 0);
-      Send(clientfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
+    if(authenticateUser() == TRUE && promptPassword() == TRUE) {
+      loginSucceed = messageOfTheDay();
     }
   }
 
   return loginSucceed;
+}
+
+int authenticateUser() {
+  char buf[MAX_LEN];
+
+  if(createUserFlag) {
+    sprintf(buf, "IAMNEW %s \r\n\r\n", name);
+  } else {
+    sprintf(buf, "IAM %s \r\n\r\n", name);
+  }
+
+  Send(clientfd, buf, strlen(buf), 0);
+  Recv(clientfd, buf, MAX_LEN, 0);
+
+  if(strncmp(buf, "HINEW ", 6) == 0 || strncmp(buf, "AUTH ", 5) == 0) {
+    if(strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+      return TRUE;
+    }
+  } else {
+    Recv(clientfd, buf, MAX_LEN, 0);
+  }
+
+  return FALSE;
+}
+
+int promptPassword() {
+  char *pass;
+  char buf[MAX_LEN];
+  
+  memset(buf, 0, MAX_LEN);
+  pass = getpass("Enter Password: ");
+  
+  if(createUserFlag) {
+    sprintf(buf, "NEWPASS %s \r\n\r\n", pass);
+  } else {
+    sprintf(buf, "PASS %s \r\n\r\n", pass);
+  }
+
+  Send(clientfd, buf, strlen(buf), 0);
+  Recv(clientfd, buf, MAX_LEN, 0);
+
+  if(strncmp(buf, "SSAPWEN ", 8) == 0 || strncmp(buf, "SSAP ", 5) == 0) {
+    if(strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+      return TRUE;
+    }
+  } else {
+    Recv(clientfd, buf, MAX_LEN, 0);
+  }
+  return FALSE;
+}
+
+int messageOfTheDay() {
+  char buf[MAX_LEN];
+  char motd[MAX_LEN];
+
+  Recv(clientfd, buf, MAX_LEN, 0);
+
+  if(strncmp(buf, "HI ", 3) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+    Recv(clientfd, buf, MAX_LEN, 0);
+
+    if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+      sscanf(buf, "MOTD %s \r\n\r\n", motd);
+      printf("%s\n", motd); 
+
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 void executeCommand() {
@@ -206,9 +260,10 @@ void processChatMessage(char *to, char *from, char *msg) {
 
   int socketfd[2];
   int pid;
+  int pid1;
   char buf[MAX_LEN];
 
-  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35+100+100"};
+  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35"};
   char fd[MAX_FD_LEN];
 
   char userName[MAX_NAME_LEN];
@@ -234,7 +289,7 @@ void processChatMessage(char *to, char *from, char *msg) {
     cmd[8] = (void *)NULL;
 
     insertUser(&userList, userName, socketfd[0]);
-    if((pid = fork()) == 0) {
+    if((pid1 = fork()) == 0) {
       close(socketfd[0]);
       execv(cmd[0], cmd);
       exit(EXIT_SUCCESS);
@@ -253,12 +308,19 @@ void processChatMessage(char *to, char *from, char *msg) {
         while(TRUE) {
           Recv(socketfd[0], msg, MAX_LEN, 0);
           
+          if(!strcmp(msg, "/close")) {
+            deleteUser(&userList, userName);
+            kill(pid1, SIGKILL);
+            break;
+          }
+
           if(strlen(msg) != 0) {
             memset(buf, 0, MAX_LEN);
             sprintf(buf, "MSG %s %s %s \r\n\r\n", to, from, msg);
             Send(clientfd, buf, MAX_LEN, 0);
           }
         }
+        close(socketfd[0]);
         exit(EXIT_SUCCESS);
       }
     }
