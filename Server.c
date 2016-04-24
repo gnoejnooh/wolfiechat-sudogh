@@ -17,11 +17,11 @@ int main(int argc, char **argv) {
 
   pthread_t tid;
 
-  sqlite3 *db = NULL;
-
   LoginThreadParam *loginThreadParam = NULL;
 
   signal(SIGINT, sigintHandler);
+
+  db = NULL;
 
   verboseFlag = FALSE;
   runFlag = TRUE;
@@ -176,6 +176,8 @@ void executeCommand() {
     printAllUserInfo(userList);
   } else if(strcmp(buf, "/help\n") == 0) {
     printUsage();
+  } else if(strcmp(buf, "/accts\n") == 0) {
+    printAllAccountsInfo(&db);
   } else if(strcmp(buf, "/shutdown\n") == 0) {
     shutdownCommand();
   } else {

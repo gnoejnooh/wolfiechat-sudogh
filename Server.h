@@ -20,6 +20,7 @@
 #include "Database.h"
 #include "User.h"
 
+sqlite3 *db;
 UserList userList;
 
 extern int verboseFlag;

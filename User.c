@@ -87,6 +87,8 @@ void printAllUserInfo(UserList userList) {
 
 	int i;
 
+	printf("There is %d user(s) exist.\n", userList.count);
+
 	for(i=0; i<userList.count; i++) {
 		next = cur->next;
 		printf("USERNAME: %-20s\n", cur->userName);
