@@ -278,30 +278,30 @@ void processChatMessage(char *to, char *from, char *msg) {
     if((pid = fork()) == 0) {
       close(socketfd[0]);
       execv(cmd[0], cmd);
+    }
+
+    close(socketfd[1]);
+    
+    if(strcmp(name, to) == 0) {
+      sprintf(buf, "< %s", msg);
     } else {
-      close(socketfd[1]);
-      
-      if(strcmp(name, to) == 0) {
-        sprintf(buf, "< %s", msg);
-      } else {
-        sprintf(buf, "> %s", msg);
-      }
+      sprintf(buf, "> %s", msg);
+    }
 
-      Send(socketfd[0], buf, MAX_LEN, 0);
+    Send(socketfd[0], buf, MAX_LEN, 0);
 
-      if((pid = fork()) == 0) {
-        while(TRUE) {
-          RecvChat(socketfd[0], msg, MAX_LEN, 0);
+    if((pid = fork()) == 0) {
+      while(TRUE) {
+        RecvChat(socketfd[0], msg, MAX_LEN, 0);
 
-          if(strcmp(msg, "/close") == 0) {
-            deleteUser(&userList, userName);
-            break;
-          }
+        if(strcmp(msg, "/close") == 0) {
+          deleteUser(&userList, userName);
+          return;
+        }
 
-          if(strlen(msg) != 0) {
-            sprintf(buf, "MSG %s %s %s \r\n\r\n", to, from, msg);
-            Send(clientfd, buf, MAX_LEN, 0);
-          }
+        if(strlen(msg) != 0) {
+          sprintf(buf, "MSG %s %s %s \r\n\r\n", to, from, msg);
+          Send(clientfd, buf, MAX_LEN, 0);
         }
       }
     }

@@ -45,7 +45,7 @@ int isAccountExist(sqlite3 **db, char *userName) {
   sqlite3_free(sql);
 
   if(rc != SQLITE_OK) {
-    printError("1 Can't execute query\n");
+    printError("Can't execute query\n");
     sqlite3_close(*db);
     exit(EXIT_FAILURE);
   }
@@ -78,7 +78,7 @@ int verifyPassword(sqlite3 **db, char *userName, char *password) {
   sqlite3_free(sql);
 
   if(rc != SQLITE_OK) {
-    printError("2 Can't execute query\n");
+    printError("Can't execute query\n");
     sqlite3_close(*db);
     exit(EXIT_FAILURE);
   }
@@ -98,7 +98,7 @@ void insertAccount(sqlite3 **db, char *userName, char *hash, char *salt) {
   sqlite3_free(sql);
 
   if(rc != SQLITE_OK) {
-    printError("3 Can't insert entry\n");
+    printError("Can't insert entry\n");
     return;
   }
 }
@@ -113,7 +113,7 @@ void printAllAccountsInfo(sqlite3 **db) {
   rc = sqlite3_exec(*db, sql, printAllAccountsInfoCallback, NULL, &errMsg);
 
   if(rc != SQLITE_OK) {
-    printError("4 Can't insert entry\n");
+    printError("Can't insert entry\n");
     return;
   }
 }
@@ -124,7 +124,7 @@ void getSalt(char *salt) {
 
 	RAND_bytes(digest, MAX_SALT_LEN);
 
-	for (i=0; i<MAX_SALT_LEN; i++) {
+	for(i=0; i<MAX_SALT_LEN; i++) {
     sprintf(&salt[i*2], "%02x", (unsigned int)digest[i]);
   }
 }
@@ -168,6 +168,6 @@ int verifyPasswordCallback(void *data, int argc, char **argv, char **azColName) 
 }
 
 int printAllAccountsInfoCallback(void *data, int argc, char **argv, char **azColName) {
-	printf("USERNAME: %s\nPASSWORD: %s\n\n", argv[1], argv[2]);
+	printf("USERNAME: %s\nPASSWORD: %-20s\n\n", argv[1], argv[2]);
 	return 0;
 }
