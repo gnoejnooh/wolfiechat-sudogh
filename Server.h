@@ -15,6 +15,7 @@
 #include <sys/wait.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
+#include <sqlite3.h>
 #include "Constant.h"
 #include "Wrapper.h"
 #include "User.h"
@@ -36,7 +37,9 @@ typedef struct communicationThreadParam {
 	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
 
-void parseOption(int argc, char **argv, char *port, char *motd);
+void openDatabase(sqlite3 *db, char *accountsFile);
+
+void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFile);
 int openListenFd(char *port);
 void executeCommand();
 
@@ -53,6 +56,7 @@ void * communicationThread(void *argv);
 void receiveTimeMessage(int connfd, time_t begin);
 void receiveListuMessage(int connfd);
 void receiveChatMessage(int connfd, char *line);
+void receiveByeMessage(int connfd, char *userName);
 
 void sigintHandler(int signum);
 
