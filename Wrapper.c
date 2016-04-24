@@ -10,10 +10,8 @@ void Send(int socket, const void *buffer, size_t length, int flags) {
 
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
-		for(int i=0; i<strlen(msg); i++) {
-			if(msg[i] == '\n' || msg[i] == '\r') {
-				msg[i] = ' ';
-			}
+		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
+			msg[strlen(msg)-5] = '\0';
 		}
 		printf("\x1B[1;34mOutgoing: %s\x1B[0m\n", msg);
 	}
@@ -49,10 +47,8 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
-		for(int i=0; i<strlen(msg); i++) {
-			if(msg[i] == '\n' || msg[i] == '\r') {
-				msg[i] = ' ';
-			}
+		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
+			msg[strlen(msg)-5] = '\0';
 		}
 		printf("\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
 	}
