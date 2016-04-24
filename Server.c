@@ -29,7 +29,6 @@ int main(int argc, char **argv) {
   parseOption(argc, argv, port, motd, accountsFile);
 
   openDatabase(&db, accountsFile);
-
   initializeUserList(&userList);
 
   listenfd = openListenFd(port);
@@ -310,8 +309,13 @@ int promptPassword(int connfd, char *userName) {
     sscanf(buf, "NEWPASS %s \r\n\r\n", password);
 
     if(verifyPasswordCriteria(password) == TRUE) {
+      char salt[MAX_SALT_LEN*2+1];
+      char hash[SHA256_DIGEST_LENGTH*2+1];
+      
 	    Send(connfd, "SSAPWEN \r\n\r\n", strlen("SSAPWEN \r\n\r\n"), 0);
-	    insertAccount(&db, userName, password);
+      getSalt(salt);
+      getHash(hash, password, salt);
+	    insertAccount(&db, userName, hash, salt);
 	    return TRUE;
     } else {
     	Send(connfd, "ERR 02 BAD PASSWORD \r\n\r\n", strlen("ERR 00 BAD PASSWORD \r\n\r\n"), 0);

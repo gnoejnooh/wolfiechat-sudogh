@@ -15,6 +15,8 @@
 #include <sys/wait.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
+#include <openssl/sha.h>
+#include <openssl/rand.h>
 #include "Constant.h"
 #include "Wrapper.h"
 #include "Database.h"
@@ -53,7 +55,6 @@ void * communicationThread(void *argv);
 int authenticateUser(int connfd, char *userName);
 int promptPassword(int connfd, char *userName);
 int verifyPasswordCriteria(char *password);
-
 
 void receiveTimeMessage(int connfd, time_t begin);
 void receiveListuMessage(int connfd);
