@@ -179,7 +179,7 @@ int promptPassword() {
     sprintf(buf, "PASS %s \r\n\r\n", pass);
   }
 
-  Send(clientfd, buf, strlen(buf), 0);
+  Send(clientfd, buf, MAX_LEN, 0);
   Recv(clientfd, buf, MAX_LEN, 0);
 
   if(strncmp(buf, "SSAPWEN ", 8) == 0 || strncmp(buf, "SSAP ", 5) == 0) {
@@ -202,6 +202,7 @@ int messageOfTheDay() {
     Recv(clientfd, buf, MAX_LEN, 0);
 
     if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+      puts("TEST");
       sscanf(buf, "MOTD %s \r\n\r\n", motd);
       printf("%s\n", motd); 
 

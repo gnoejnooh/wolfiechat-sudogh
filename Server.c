@@ -231,43 +231,111 @@ void * loginThread(void *argv) {
 
   if(strcmp(buf, "WOLFIE \r\n\r\n") == 0) {
     Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0);
-    Recv(connfd, buf, MAX_LEN, 0);
+    if(authenticateUser(connfd, userName) == TRUE && promptPassword(connfd) == TRUE) {
+		memset(buf, 0, MAX_LEN);
+		sprintf(buf, "HI %s \r\n\r\n", userName);
+		Send(connfd, buf, strlen(buf), 0);
+		insertUser(&userList, userName, connfd);
 
-    if(strncmp(buf, "IAM ", 4) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
-      strcpy(userName, &buf[4]);
-      userName[strlen(userName)-5] = '\0';
-      
-      if(!isUserExist(userList, userName)) {
+		memset(buf, 0, MAX_LEN);
+		sprintf(buf, "MOTD %s \r\n\r\n", motd);
+		Send(connfd, buf, strlen(buf), 0);
 
-        CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
-        
-        memset(buf, 0, MAX_LEN);
-        sprintf(buf, "HI %s \r\n\r\n", userName);
-        Send(connfd, buf, strlen(buf), 0);
-        insertUser(&userList, userName, connfd);
-        
-        memset(buf, 0, MAX_LEN);
-        sprintf(buf, "MOTD %s \r\n\r\n", motd);
-        Send(connfd, buf, strlen(buf), 0);
-
-        communicationThreadParam->connfd = &connfd;
-        strcpy(communicationThreadParam->userName, userName);
-        pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
-
-      } else {
-
-        Send(connfd, "ERR 00 USER NAME TAKEN \r\n\r\n", strlen("ERR 00 USER NAME TAKEN \r\n\r\n"), 0);
-        Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
-
-        Recv(connfd, buf, MAX_LEN, 0);
-
-        printf("%s\n", buf);
-        close(connfd);
-      }
+      CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
+      communicationThreadParam->connfd = &connfd;
+      strcpy(communicationThreadParam->userName, userName);
+      pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
     }
   }
 
   return NULL;
+}
+
+int authenticateUser(int connfd, char *userName) {
+
+  char buf[MAX_LEN];
+  
+  Recv(connfd, buf, MAX_LEN, 0);
+
+  if(strncmp(buf, "IAMNEW ", 7) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+    strcpy(userName, &buf[7]);
+    userName[strlen(userName)-5] = '\0';
+    //TODO: CHECK DATABASE FOR USERNAME
+    memset(buf, 0, MAX_LEN);
+    sprintf(buf, "HINEW %s \r\n\r\n", userName);
+    Send(connfd, buf, strlen(buf), 0);
+    return TRUE;
+  } else if (strncmp(buf, "IAM ", 4) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+    strcpy(userName, &buf[4]);
+    userName[strlen(userName)-5] = '\0';
+    
+    if(!isUserExist(userList, userName)) {
+      memset(buf, 0, MAX_LEN);
+      sprintf(buf, "AUTH %s \r\n\r\n", userName);
+      Send(connfd, buf, strlen(buf), 0);
+      return TRUE;
+    } else {
+      Send(connfd, "ERR 00 USER NAME TAKEN \r\n\r\n", strlen("ERR 00 USER NAME TAKEN \r\n\r\n"), 0);
+      Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
+    }
+  }
+
+  return FALSE;
+}
+
+int promptPassword(int connfd) {
+
+  char buf[MAX_LEN];
+  char password[MAX_PASSWORD_LEN];
+  
+  Recv(connfd, buf, MAX_LEN, 0);
+
+  if(strncmp(buf, "NEWPASS ", 8) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+    strcpy(password, &buf[8]);
+    password[strlen(password)-5] = '\0';
+    if(verifyPassword()) {
+	    Send(connfd, "SSAPWEN \r\n\r\n", strlen("SSAPWEN \r\n\r\n"), 0);
+	    return TRUE;	
+    } else {
+    	Send(connfd, "ERR 02 BAD PASSWORD \r\n\r\n", strlen("ERR 00 BAD PASSWORD \r\n\r\n"), 0);
+    	Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);	
+    }
+  } else if (strncmp(buf, "PASS ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
+    strcpy(password, &buf[5]);
+    password[strlen(password)-5] = '\0';
+    //TODO: CHECK PASSWORD IN THE DATABASE WITH MATCHING USERNAME
+    Send(connfd, "SSAP \r\n\r\n", strlen("SSAP \r\n\r\n"), 0);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+int verifyPassword(char *password) {
+	
+	int i;
+	int upper = 0;
+	int lower = 0;
+	int symbol = 0;
+	int number = 0;
+	
+	for(i = 0; i < strlen(password); i++) {
+		if(password[i] > 47 && password[i] < 58) {
+			number++;
+		} else if(password[i] > 64 && password[i] < 91) {
+			upper++;
+		} else if(password[i] > 96 && password[i] < 123) {
+			lower++;
+		} else {
+			symbol++;
+		}
+	}
+
+	if(strlen(password) > 5 && upper && symbol && number) {
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 void * communicationThread(void *argv) {
