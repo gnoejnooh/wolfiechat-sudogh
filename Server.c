@@ -179,7 +179,7 @@ void executeCommand() {
   } else if(strcmp(buf, "/shutdown\n") == 0) {
     shutdownCommand();
   } else {
-    printError("Command doesn't exist\n");
+    printError("Command does not exist\n");
   }
 }
 

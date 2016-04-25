@@ -11,6 +11,7 @@ int main(int argc, char** argv) {
 
 	memset(buf, 0, MAX_LEN);
 
+	signal(SIGINT, sigintHandler);
 	signal(SIGHUP, sighupHandler);
   
 	FD_ZERO(&readSet);
@@ -39,7 +40,13 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	close(chatfd);
 	return 0;
+}
+
+void sigintHandler(int signum) {
+  send(chatfd, "/close", sizeof("/close"), 0);
+  exit(EXIT_FAILURE);
 }
 
 void sighupHandler(int signum) {

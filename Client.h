@@ -26,6 +26,11 @@ int runFlag;
 extern int verboseFlag;
 int createUserFlag;
 
+typedef struct communicationThreadParam {
+	int connfd;
+	char userName[MAX_NAME_LEN];
+} CommunicationThreadParam;
+
 void parseOption(int argc, char **argv, char *hostname, char *port);
 int openClientFd(char *hostname, char *port);
 int login();
@@ -48,6 +53,7 @@ int verifyChatCommand(char *line, char *to, char *msg);
 void printUsage();
 
 void sigintHandler(int signum);
-void sigchldHandler(int signum);
+
+void * communicationThread(void *argv);
 
 #endif

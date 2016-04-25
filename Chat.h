@@ -12,6 +12,7 @@
 
 int chatfd;
 
+void sigintHandler(int signum);
 void sighupHandler(int signum);
 
 #endif

@@ -13,7 +13,6 @@ int main(int argc, char **argv) {
   createUserFlag = FALSE;
 
   signal(SIGINT, sigintHandler);
-  signal(SIGCHLD, sigchldHandler);
 
   parseOption(argc, argv, hostname, port);
 
@@ -255,6 +254,9 @@ void processChatMessage(char *to, char *from, char *msg) {
 
   char userName[MAX_NAME_LEN];
 
+  CommunicationThreadParam *communicationThreadParam;
+  pthread_t tid;
+
   if(strcmp(name, to) == 0) {
     strcpy(userName, from);
   } else if(strcmp(name, from) == 0) {
@@ -263,9 +265,9 @@ void processChatMessage(char *to, char *from, char *msg) {
 
   if(isUserExist(userList, userName) == FALSE) {
     socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
+    insertUser(&userList, userName, socketfd[0]);
 
     sprintf(fd, "%d", socketfd[1]);
-
     cmd[3] = "-T";
     cmd[4] = userName;
     cmd[5] = "-e";
@@ -273,40 +275,50 @@ void processChatMessage(char *to, char *from, char *msg) {
     cmd[7] = fd;
     cmd[8] = (void *)NULL;
 
-    insertUser(&userList, userName, socketfd[0]);
-
     if((pid = fork()) == 0) {
+
       close(socketfd[0]);
       execv(cmd[0], cmd);
-    }
-
-    close(socketfd[1]);
-    
-    if(strcmp(name, to) == 0) {
-      sprintf(buf, "< %s", msg);
+      exit(EXIT_SUCCESS);
     } else {
-      sprintf(buf, "> %s", msg);
+      close(socketfd[1]);
+
+      if(strcmp(name, to) == 0) {
+        sprintf(buf, "< %s", msg);
+      } else {
+        sprintf(buf, "> %s", msg);
+      }
+
+      Send(socketfd[0], buf, MAX_LEN, 0);
     }
 
-    Send(socketfd[0], buf, MAX_LEN, 0);
-
+    communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
+    communicationThreadParam->connfd = socketfd[0];
+    strcpy(communicationThreadParam->userName, userName);
+    pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
+    /*
     if((pid = fork()) == 0) {
+      
       while(TRUE) {
         RecvChat(socketfd[0], msg, MAX_LEN, 0);
 
         if(strcmp(msg, "/close") == 0) {
           deleteUser(&userList, userName);
-          return;
+          break;
         }
 
         if(strlen(msg) != 0) {
-          sprintf(buf, "MSG %s %s %s \r\n\r\n", to, from, msg);
+          sprintf(buf, "MSG %s %s %s \r\n\r\n", userName, name, msg);
           Send(clientfd, buf, MAX_LEN, 0);
         }
       }
-    }
-  } else {
 
+      close(socketfd[0]);
+    }
+
+    waitpid(-1, 0, WNOHANG);
+    */
+  } else {
     User *user = findUser(userList, userName);
     int connfd = user->connfd;
 
@@ -363,6 +375,10 @@ void chatCommand(char *line) {
   char to[MAX_NAME_LEN];
   char msg[MAX_LEN];
 
+  memset(buf, 0, MAX_LEN);
+  memset(to, 0, MAX_NAME_LEN);
+  memset(msg, 0, MAX_LEN);
+
 	if(verifyChatCommand(line, to, msg) == FALSE) {
     printError("Invalid format\n");
     return;
@@ -395,12 +411,39 @@ void printUsage() {
   fprintf(stderr, "SERVER_PORT  The port to connect to\n");
 }
 
+void * communicationThread(void *argv) {
+  CommunicationThreadParam *param = (CommunicationThreadParam *)argv;
+  int connfd = param->connfd;
+  char userName[MAX_NAME_LEN];
+
+  char buf[MAX_LEN];
+  char msg[MAX_LEN];
+
+  strcpy(userName, param->userName);
+
+  pthread_detach(pthread_self());
+  free(argv);
+
+  while(TRUE) {
+    RecvChat(connfd, msg, MAX_LEN, 0);
+
+    if(strcmp(msg, "/close") == 0) {
+      deleteUser(&userList, userName);
+      break;
+    }
+
+    if(strlen(msg) != 0) {
+      sprintf(buf, "MSG %s %s %s \r\n\r\n", userName, name, msg);
+      Send(clientfd, buf, MAX_LEN, 0);
+    }
+  }
+
+  close(connfd);
+
+  return NULL;
+}
+
 void sigintHandler(int signum) {
   logoutCommand();
   exit(signum);
-}
-
-void sigchldHandler(int signum) {
-  while(waitpid(-1, 0, WNOHANG) > 0);
-  return;
 }

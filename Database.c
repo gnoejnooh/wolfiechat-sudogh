@@ -159,8 +159,7 @@ int isAccountExistCallback(void *data, int argc, char **argv, char **azColName) 
 
 int verifyPasswordCallback(void *data, int argc, char **argv, char **azColName) {
 	PasswordInfo *passwordInfo = (PasswordInfo *)data;
-	puts("TEST");
-
+	
 	strcpy(passwordInfo->hash, argv[2]);
 	strcpy(passwordInfo->salt, argv[3]);
 

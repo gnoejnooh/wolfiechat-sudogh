@@ -60,13 +60,12 @@ void RecvChat(int socket, void *buffer, size_t length, int flags) {
 
 	memset(buffer, 0, length);
 
-	if((n = recv(socket, buffer, length, flags)) < 5) {
+	if((n = recv(socket, buffer, length, flags)) == 0) {
 		return;
 	}
 
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
-		msg[strlen(msg)-5] = '\0';
 		printf("\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
 	}
 }
