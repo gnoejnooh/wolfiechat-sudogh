@@ -203,10 +203,16 @@ void printPrompt() {
 
 void printUsage() {
   fprintf(stderr, "USAGE: ./server [-h|-v] PORT_NUMBER MOTD\n");
-  fprintf(stderr, "-h            Displays help menu & returns EXIT_SUCCESS.\n");
-  fprintf(stderr, "-v            Verbose print all incoming and outgoing protocol verbs & content.\n");
-  fprintf(stderr, "PORT_NUMBER   Port number to listen on.\n");
-  fprintf(stderr, "MOTD          Message to display to the client when they connect.\n");
+  fprintf(stderr, "-h             Displays help menu & returns EXIT_SUCCESS.\n");
+  fprintf(stderr, "-v             Verbose print all incoming and outgoing protocol verbs & content.\n");
+  fprintf(stderr, "PORT_NUMBER    Port number to listen on.\n");
+  fprintf(stderr, "MOTD           Message to display to the client when they connect.\n");
+  fprintf(stderr, "ACCOUNTS_FILE  File containing username and password data.\n");
+  fprintf(stderr, "\nServer Commands\n");
+  fprintf(stderr, "/users         Display a list of currently logged in users\n");
+  fprintf(stderr, "/help          Display usage statement\n");
+  fprintf(stderr, "/shutdown      Terminate server\n");
+  fprintf(stderr, "/accts         Display a list of all user accounts and information\n");
 }
 
 void * loginThread(void *argv) {

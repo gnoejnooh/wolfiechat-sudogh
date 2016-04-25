@@ -382,12 +382,18 @@ int verifyChatCommand(char *line, char *to, char *msg) {
 
 void printUsage() {
   fprintf(stderr, "USAGE: ./client [-hcv] NAME SERVER_IP SERVER_PORT\n");
-  fprintf(stderr, "-h           Displays help menu & returns EXIT_SUCCESS.\n");
-  fprintf(stderr, "-c           Request to server to create a new user\n");
-  fprintf(stderr, "-v           Verbose print all incoming and outgoing protocol verbs & content.\n");
-  fprintf(stderr, "NAME         This is the username to display when chatting\n");
-  fprintf(stderr, "SERVER_IP    The ipaddress of the server to connect to\n");
-  fprintf(stderr, "SERVER_PORT  The port to connect to\n");
+  fprintf(stderr, "-h                 Displays help menu & returns EXIT_SUCCESS.\n");
+  fprintf(stderr, "-c                 Request to server to create a new user\n");
+  fprintf(stderr, "-v                 Verbose print all incoming and outgoing protocol verbs & content.\n");
+  fprintf(stderr, "NAME               This is the username to display when chatting\n");
+  fprintf(stderr, "SERVER_IP          The ipaddress of the server to connect to\n");
+  fprintf(stderr, "SERVER_PORT        The port to connect to\n");
+  fprintf(stderr, "\nClient Commands\n");
+  fprintf(stderr, "/time              Display the time client has been connected to the server\n");
+  fprintf(stderr, "/help              Display usage statement\n");
+  fprintf(stderr, "/logout            Logout from the server\n");
+  fprintf(stderr, "/listu             Display a list of active user in current server\n");
+  fprintf(stderr, "/chat <to> <msg>   Send message to indicated user\n");
 }
 
 void * communicationThread(void *argv) {
