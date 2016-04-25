@@ -296,28 +296,7 @@ void processChatMessage(char *to, char *from, char *msg) {
     communicationThreadParam->connfd = socketfd[0];
     strcpy(communicationThreadParam->userName, userName);
     pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
-    /*
-    if((pid = fork()) == 0) {
-      
-      while(TRUE) {
-        RecvChat(socketfd[0], msg, MAX_LEN, 0);
-
-        if(strcmp(msg, "/close") == 0) {
-          deleteUser(&userList, userName);
-          break;
-        }
-
-        if(strlen(msg) != 0) {
-          sprintf(buf, "MSG %s %s %s \r\n\r\n", userName, name, msg);
-          Send(clientfd, buf, MAX_LEN, 0);
-        }
-      }
-
-      close(socketfd[0]);
-    }
-
-    waitpid(-1, 0, WNOHANG);
-    */
+    
   } else {
     User *user = findUser(userList, userName);
     int connfd = user->connfd;
