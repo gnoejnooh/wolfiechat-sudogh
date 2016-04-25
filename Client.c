@@ -249,7 +249,9 @@ void processChatMessage(char *to, char *from, char *msg) {
   int pid;
   char buf[MAX_LEN];
 
-  char *cmd[MAX_NAME_LEN] = {"/usr/bin/xterm", "-geometry", "45x35"};
+  char *cmd[MAX_NAME_LEN] =
+    {"/usr/bin/xterm", "-geometry", "45x35", "-background", "gray15",
+    "-fa", "Monospace", "-fs", "12"};
   char fd[MAX_FD_LEN];
 
   char userName[MAX_NAME_LEN];
@@ -267,13 +269,14 @@ void processChatMessage(char *to, char *from, char *msg) {
     socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
     insertUser(&userList, userName, socketfd[0]);
 
+    sprintf(buf, "WOLFIE CHAT with [ %s ]\n", userName);
     sprintf(fd, "%d", socketfd[1]);
-    cmd[3] = "-T";
-    cmd[4] = userName;
-    cmd[5] = "-e";
-    cmd[6] = "./chat";
-    cmd[7] = fd;
-    cmd[8] = (void *)NULL;
+    cmd[9] = "-T";
+    cmd[10] = buf;
+    cmd[11] = "-e";
+    cmd[12] = "./chat";
+    cmd[13] = fd;
+    cmd[14] = (void *)NULL;
 
     if((pid = fork()) == 0) {
 
@@ -284,9 +287,9 @@ void processChatMessage(char *to, char *from, char *msg) {
       close(socketfd[1]);
 
       if(strcmp(name, to) == 0) {
-        sprintf(buf, "< %s", msg);
+        sprintf(buf, "\e[93m[ %s ]\e[0m %s", userName, msg);
       } else {
-        sprintf(buf, "> %s", msg);
+        sprintf(buf, "\e[94m[ %s ]\e[0m %s", name, msg);
       }
 
       Send(socketfd[0], buf, MAX_LEN, 0);
@@ -302,9 +305,9 @@ void processChatMessage(char *to, char *from, char *msg) {
     int connfd = user->connfd;
 
     if(strcmp(name, to) == 0) {
-      sprintf(buf, "< %s", msg);
+      sprintf(buf, "\e[93m[ %s ]\e[0m %s", userName, msg);
     } else {
-      sprintf(buf, "> %s", msg);
+      sprintf(buf, "\e[94m[ %s ]\e[0m %s", name, msg);
     }
 
     Send(connfd, buf, MAX_LEN, 0);
