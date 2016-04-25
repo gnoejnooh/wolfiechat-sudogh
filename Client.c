@@ -171,10 +171,10 @@ int authenticateUser() {
       return TRUE;
     }
   } else if(strncmp(buf, "ERR 00", 5) == 0) {
-    printError("Already exist user");
+    printError("User name taken\n");
     Recv(clientfd, buf, MAX_LEN, 0);
   } else if(strncmp(buf, "ERR 01", 5) == 0) {
-    printError("Already logged on user");
+    printError("User not available\n");
     Recv(clientfd, buf, MAX_LEN, 0);
   }
 
@@ -235,7 +235,7 @@ void receiveMessage() {
   if(strncmp(buf, "MSG", 3) == 0) {
     receiveChatMessage(buf);
   } else if(strncmp(buf, "ERR 01", 5) == 0) {
-    printError("User doesn't exist\n");
+    printError("User not avaiable\n");
   }
 }
 

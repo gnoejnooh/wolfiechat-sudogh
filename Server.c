@@ -442,6 +442,8 @@ void receiveChatMessage(int connfd, char *line) {
       userConnfd = user->connfd;
       Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE \r\n\r\nd"), 0);
     }
+  } else if(strcmp(to, from) == 0) {
+      Send(connfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE \r\n\r\nd"), 0);
   } else {
     if((user = findUser(userList, to)) != NULL) {
       userConnfd = user->connfd;

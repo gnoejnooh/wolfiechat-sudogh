@@ -1,0 +1,3 @@
+- group name: sudogh
+- SBUID#: 109507150 / 109606734
+- Parter names: Giyeop Hwang / Jeonghoon Kim
