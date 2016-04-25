@@ -170,7 +170,11 @@ int authenticateUser() {
     if(strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
       return TRUE;
     }
-  } else {
+  } else if(strncmp(buf, "ERR 00", 5) == 0) {
+    printError("Already exist user");
+    Recv(clientfd, buf, MAX_LEN, 0);
+  } else if(strncmp(buf, "ERR 01", 5) == 0) {
+    printError("Already logged on user");
     Recv(clientfd, buf, MAX_LEN, 0);
   }
 
@@ -230,6 +234,8 @@ void receiveMessage() {
 
   if(strncmp(buf, "MSG", 3) == 0) {
     receiveChatMessage(buf);
+  } else if(strncmp(buf, "ERR 01", 5) == 0) {
+    printError("User doesn't exist\n");
   }
 }
 
@@ -269,7 +275,7 @@ void processChatMessage(char *to, char *from, char *msg) {
     socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
     insertUser(&userList, userName, socketfd[0]);
 
-    sprintf(buf, "WOLFIE CHAT with [ %s ]\n", userName);
+    sprintf(buf, "WOLFIE CHAT with %s \n", userName);
     sprintf(fd, "%d", socketfd[1]);
     cmd[9] = "-T";
     cmd[10] = buf;

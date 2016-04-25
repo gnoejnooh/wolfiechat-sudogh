@@ -13,7 +13,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-#include <sys/epoll.h>
 #include <netinet/in.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
@@ -35,8 +34,7 @@ typedef struct loginThreadParam {
 } LoginThreadParam;
 
 typedef struct communicationThreadParam {
-	int *connfd;
-	UserList *userList;
+	int connfd;
 	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
 

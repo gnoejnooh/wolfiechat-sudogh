@@ -1,7 +1,7 @@
 all: server client chat
 
 Database.o: Database.c
-	gcc -Wall -Werror -c Database.c -pthread -lssl -lcrypto -lsqlite3
+	gcc -Wall -Werror -c Database.c
 
 User.o: User.c
 	gcc -Wall -Werror -c User.c

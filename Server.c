@@ -3,8 +3,10 @@
 int main(int argc, char **argv) {
   
   int listenfd;
-  int epollfd;
   int *connfd = NULL;
+
+  fd_set readSet;
+  fd_set readySet;
 
   char port[MAX_PORT_LEN];
   char motd[MAX_LEN];
@@ -12,8 +14,6 @@ int main(int argc, char **argv) {
 
   struct sockaddr_in *connAddr = malloc(sizeof(struct sockaddr_in));
   socklen_t connLen;
-
-  struct epoll_event event;
 
   pthread_t tid;
 
@@ -33,23 +33,17 @@ int main(int argc, char **argv) {
 
   listenfd = openListenFd(port);
 
-  epollfd = epoll_create1(0);
-
-  event.data.fd = STDIN;
-  event.events = EPOLLIN | EPOLLET;
-  epoll_ctl(epollfd, EPOLL_CTL_ADD, fileno(stdin), &event);
-
-  event.data.fd = listenfd;
-  event.events = EPOLLIN | EPOLLET;
-  epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &event);
+  FD_ZERO(&readSet);
+  FD_SET(STDIN, &readSet);
+  FD_SET(listenfd, &readSet);
 
   printf("Currently listening on port %s\n", port);
 
   while(runFlag) {
+    readySet  = readSet;
+    select(listenfd+1, &readySet, NULL, NULL, NULL);
 
-    epoll_wait(epollfd, &event, 1, -1);
-
-    if(event.data.fd == STDIN) {
+    if(FD_ISSET(STDIN, &readySet)) {
       executeCommand();
 
       if(runFlag == FALSE) {
@@ -57,7 +51,7 @@ int main(int argc, char **argv) {
       }
     }
 
-    if(event.data.fd == listenfd) {
+    if(FD_ISSET(listenfd, &readySet)) {
       connLen = sizeof(struct sockaddr_in);
       loginThreadParam = malloc(sizeof(LoginThreadParam));
       connfd = malloc(sizeof(int));
@@ -247,7 +241,7 @@ void * loginThread(void *argv) {
         Send(connfd, buf, strlen(buf), 0);
 
         CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
-        communicationThreadParam->connfd = &connfd;
+        communicationThreadParam->connfd = connfd;
         strcpy(communicationThreadParam->userName, userName);
         pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
       }
@@ -374,7 +368,7 @@ int verifyPasswordCriteria(char *password) {
 void * communicationThread(void *argv) {
 
   CommunicationThreadParam *param = (CommunicationThreadParam *)argv;
-  int connfd = *(param->connfd);
+  int connfd = param->connfd;
   char userName[MAX_NAME_LEN];
 
   char buf[MAX_LEN];
@@ -441,12 +435,12 @@ void receiveChatMessage(int connfd, char *line) {
   if(isUserExist(userList, to) == FALSE || isUserExist(userList, from) == FALSE) {
     if((user = findUser(userList, to)) != NULL) {
       userConnfd = user->connfd;
-      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE"), 0);
+      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE \r\n\r\n"), 0);
     }
 
     if((user = findUser(userList, from)) != NULL) {
       userConnfd = user->connfd;
-      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE"), 0);
+      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE \r\n\r\nd"), 0);
     }
   } else {
     if((user = findUser(userList, to)) != NULL) {
