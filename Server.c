@@ -4,6 +4,7 @@ int main(int argc, char **argv) {
   
   int listenfd;
   int *connfd = NULL;
+  int fdmax;
 
   fd_set readSet;
   fd_set readySet;
@@ -81,12 +82,15 @@ void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFi
   memset(motd, 0, MAX_LEN);
   memset(accountsFile, 0, MAX_FILE_LEN);
 
-  while((opt = getopt(argc, argv, "hv")) != -1) {
+  while((opt = getopt(argc, argv, "ht:v")) != -1) {
     switch(opt) {
     case 'h':
       printUsage();
       exit(EXIT_SUCCESS);
       break;
+    case 't':
+    	numthread = atoi(optarg);
+    	break;
     case 'v':
       verboseFlag = TRUE;
       break;

@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -26,6 +27,7 @@ UserList userList;
 
 extern int verboseFlag;
 int runFlag;
+int numthread;
 
 typedef struct loginThreadParam {
 	pthread_t tid;
