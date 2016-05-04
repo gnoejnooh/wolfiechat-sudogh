@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <netdb.h>
 #include <signal.h>
@@ -18,7 +19,9 @@
 #include "User.h"
 
 int clientfd;
+int auditfd;
 
+char auditFileName[MAX_FILE_LEN] = AUDIT_FILE_NAME;
 char name[MAX_NAME_LEN];
 UserList userList;
 
@@ -47,6 +50,7 @@ void timeCommand();
 void logoutCommand();
 void listuCommand();
 void chatCommand(char *line);
+void auditCommand();
 
 int verifyChatCommand(char *line, char *to, char *msg);
 

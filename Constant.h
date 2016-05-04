@@ -19,6 +19,8 @@
 #define MAX_LISTU_LEN		65536
 #define MAX_BUF_LEN			65536
 
-#define BACKLOG				10
+#define AUDIT_FILE_NAME		"audit.log"
+
+#define BACKLOG				128
 
 #endif

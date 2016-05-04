@@ -27,7 +27,7 @@ UserList userList;
 
 extern int verboseFlag;
 int runFlag;
-int numthread;
+int numThread;
 
 typedef struct loginThreadParam {
 	pthread_t tid;

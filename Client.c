@@ -5,6 +5,8 @@ int main(int argc, char **argv) {
   char hostname[MAX_HOSTNAME_LEN];
   char port[MAX_PORT_LEN];
 
+  //FILE *fp = NULL;
+
   fd_set readSet;
   fd_set readySet;
 
@@ -15,13 +17,16 @@ int main(int argc, char **argv) {
   signal(SIGINT, sigintHandler);
 
   parseOption(argc, argv, hostname, port);
-
   initializeUserList(&userList);
+
+  auditfd = open(auditFileName, O_WRONLY | O_CREAT | O_TRUNC);
+  printf("%d\n", auditfd);
 
   if((clientfd = openClientFd(hostname, port)) == -1) {
     printError("Failed to connect on server\n");
     exit(EXIT_FAILURE);
   }
+  puts("TEST");
 
   if(login() == TRUE) {
     
@@ -46,6 +51,7 @@ int main(int argc, char **argv) {
   }
 
   close(clientfd);
+  //close(auditfd);
 
   return 0;
 }
@@ -54,8 +60,11 @@ void parseOption(int argc, char **argv, char *hostname, char *port) {
 
   int opt;
 
-  while((opt = getopt(argc, argv, "hcv")) != -1) {
+  while((opt = getopt(argc, argv, "a:hcv")) != -1) {
     switch(opt) {
+    case 'a':
+      strcpy(auditFileName, optarg);
+      break;
     case 'h':
       /* The help menu was selected */
       printUsage();
@@ -220,8 +229,11 @@ void executeCommand() {
     logoutCommand();
   } else if(strcmp(buf, "/listu\n") == 0) {
     listuCommand();
+    printLog(auditfd, name, "CMD", "/listu", "success", "client");
   } else if(strncmp(buf, "/chat", 5) == 0) {
   	chatCommand(buf);
+  } else if(strcmp(buf, "/audit\n") == 0) {
+    auditCommand();
   } else {
     printError("Command does not exist\n");
   }
@@ -259,6 +271,7 @@ void processChatMessage(char *to, char *from, char *msg) {
     {"/usr/bin/xterm", "-geometry", "45x35", "-background", "gray15",
     "-fa", "Monospace", "-fs", "12"};
   char fd[MAX_FD_LEN];
+  char logfd[MAX_FD_LEN];
 
   char userName[MAX_NAME_LEN];
 
@@ -277,12 +290,14 @@ void processChatMessage(char *to, char *from, char *msg) {
 
     sprintf(buf, "WOLFIE CHAT with %s \n", userName);
     sprintf(fd, "%d", socketfd[1]);
+    sprintf(logfd, "%d", auditfd);
     cmd[9] = "-T";
     cmd[10] = buf;
     cmd[11] = "-e";
     cmd[12] = "./chat";
     cmd[13] = fd;
-    cmd[14] = (void *)NULL;
+    cmd[14] = logfd;
+    cmd[15] = (void *)NULL;
 
     if((pid = fork()) == 0) {
 
@@ -374,6 +389,10 @@ void chatCommand(char *line) {
 
 	sprintf(buf, "MSG %s %s %s \r\n\r\n", to, name, msg);
   Send(clientfd, buf, strlen(buf), 0);
+}
+
+void auditCommand() {
+  return;
 }
 
 int verifyChatCommand(char *line, char *to, char *msg) {

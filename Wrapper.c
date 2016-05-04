@@ -70,6 +70,52 @@ void RecvChat(int socket, void *buffer, size_t length, int flags) {
 	}
 }
 
+void printLog(int fd, char *userName, char *event, ...) {
+	va_list ap;
+	
+	time_t rawTime;
+	struct tm *info;
+
+	char buf[MAX_LEN];
+
+	time(&rawTime);
+	info = localtime(&rawTime);
+	strftime(buf, MAX_LEN, "%x-%I:%M%p, ", info);
+	strcat(buf, userName);
+	strcat(buf, ", ");
+	strcat(buf, event);
+	strcat(buf, ", ");
+	va_start(ap, event);
+	if(strcmp(event, "LOGIN") == 0) {
+		strcat(buf, va_arg(ap, char *));
+		strcat(buf, ":");
+		strcat(buf, va_arg(ap, char *));
+		strcat(buf, ", ");
+		strcat(buf, va_arg(ap, char *));
+		strcat(buf, ", ");
+		strcat(buf, va_arg(ap, char *));
+	} else if(strcmp(event, "CMD")) {
+		strcat(buf, va_arg(ap, char*));
+		strcat(buf, ", ");
+		strcat(buf, va_arg(ap, char *));
+		strcat(buf, ", ");
+		strcat(buf, va_arg(ap, char *));
+	} else if(strcmp(event, "MSG")) {
+		strcat(buf, va_arg(ap, char*));
+		strcat(buf, ", ");
+		strcat(buf, va_arg(ap, char *));
+		strcat(buf, ", ");
+		strcat(buf, va_arg(ap, char *));
+	} else if(strcmp(event, "LOGOUT")) {
+		strcat(buf, va_arg(ap, char*));
+	} else if(strcmp(event, "ERR")) {
+		strcat(buf, va_arg(ap, char*));
+	}
+	strcat(buf, "\n");
+	printf("TEST%s", buf);
+	write(fd, &buf, sizeof(buf));
+}
+
 void printError(char *msg) {
   fprintf(stderr, "\x1B[1;31mERROR: ");
   fprintf(stderr, "%s", msg);
