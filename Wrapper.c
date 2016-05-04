@@ -95,21 +95,21 @@ void printLog(int fd, char *userName, char *event, ...) {
 		strcat(buf, ", ");
 		strcat(buf, va_arg(ap, char *));
 	} else if(strcmp(event, "CMD")) {
-		strcat(buf, va_arg(ap, char*));
+		strcat(buf, va_arg(ap, char *));
 		strcat(buf, ", ");
 		strcat(buf, va_arg(ap, char *));
 		strcat(buf, ", ");
 		strcat(buf, va_arg(ap, char *));
 	} else if(strcmp(event, "MSG")) {
-		strcat(buf, va_arg(ap, char*));
+		strcat(buf, va_arg(ap, char *));
 		strcat(buf, ", ");
 		strcat(buf, va_arg(ap, char *));
 		strcat(buf, ", ");
 		strcat(buf, va_arg(ap, char *));
 	} else if(strcmp(event, "LOGOUT")) {
-		strcat(buf, va_arg(ap, char*));
+		strcat(buf, va_arg(ap, char *));
 	} else if(strcmp(event, "ERR")) {
-		strcat(buf, va_arg(ap, char*));
+		strcat(buf, va_arg(ap, char *));
 	}
 	strcat(buf, "\n");
 	write(fd, buf, strlen(buf));

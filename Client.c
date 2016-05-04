@@ -147,13 +147,13 @@ int login() {
             printf("%s\n", motd); 
 
             loginSucceed = TRUE;
+            printLog(auditfd, name, "LOGIN", hostname, port, "success", motd);
           }
         }
       }
     }
   }
-  printLog(auditfd, name, "LOGIN", hostname, port, "success", motd);
-
+  
   return loginSucceed;
 }
 
@@ -225,7 +225,9 @@ void executeCommand() {
     printLog(auditfd, name, "CMD", "/help", "success", "client");
   } else if(strcmp(buf, "/logout\n") == 0) {
     logoutCommand();
+    puts("TEST");
     printLog(auditfd, name, "CMD", "/logout", "success", "client");
+    puts("TEST");
     printLog(auditfd, name, "LOGOUT", "intentional");
   } else if(strcmp(buf, "/listu\n") == 0) {
     listuCommand();
