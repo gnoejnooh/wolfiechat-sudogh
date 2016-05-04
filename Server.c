@@ -4,7 +4,6 @@ int main(int argc, char **argv) {
   
   int listenfd;
   int *connfd = NULL;
-  int fdmax;
 
   fd_set readSet;
   fd_set readySet;
@@ -89,7 +88,7 @@ void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFi
       exit(EXIT_SUCCESS);
       break;
     case 't':
-    	numthread = atoi(optarg);
+    	numThread = atoi(optarg);
     	break;
     case 'v':
       verboseFlag = TRUE;
@@ -187,7 +186,7 @@ void shutdownCommand() {
 
   while(cur != NULL) {
     connfd = cur->connfd;
-    Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
+    Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
     cur = cur->next;
   }
 
@@ -408,7 +407,7 @@ void receiveTimeMessage(int connfd, time_t begin) {
   time_t current = time(NULL);
 
   sprintf(buf, "EMIT %ld \r\n\r\n", current-begin);
-  Send(connfd, buf, sizeof(buf), 0);
+  Send(connfd, buf, strlen(buf), 0);
 }
 
 void receiveListuMessage(int connfd) {
@@ -424,7 +423,7 @@ void receiveListuMessage(int connfd) {
   }
 
   sprintf(buf+strlen(buf), "\r\n");
-  Send(connfd, buf, sizeof(buf), 0);
+  Send(connfd, buf, strlen(buf), 0);
 }
 
 void receiveChatMessage(int connfd, char *line) {
@@ -439,24 +438,24 @@ void receiveChatMessage(int connfd, char *line) {
   if(isUserExist(userList, to) == FALSE || isUserExist(userList, from) == FALSE) {
     if((user = findUser(userList, to)) != NULL) {
       userConnfd = user->connfd;
-      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE \r\n\r\n"), 0);
+      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", strlen("ERR 01 USER NOT AVAILABLE \r\n\r\n"), 0);
     }
 
     if((user = findUser(userList, from)) != NULL) {
       userConnfd = user->connfd;
-      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE \r\n\r\nd"), 0);
+      Send(userConnfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", strlen("ERR 01 USER NOT AVAILABLE \r\n\r\nd"), 0);
     }
   } else if(strcmp(to, from) == 0) {
-      Send(connfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", sizeof("ERR 01 USER NOT AVAILABLE \r\n\r\nd"), 0);
+      Send(connfd, "ERR 01 USER NOT AVAILABLE \r\n\r\n", strlen("ERR 01 USER NOT AVAILABLE \r\n\r\nd"), 0);
   } else {
     if((user = findUser(userList, to)) != NULL) {
       userConnfd = user->connfd;
-      Send(userConnfd, line, MAX_LEN, 0);
+      Send(userConnfd, line, strlen(line), 0);
     }
 
     if((user = findUser(userList, from)) != NULL) {
       userConnfd = user->connfd;
-      Send(userConnfd, line, MAX_LEN, 0);
+      Send(userConnfd, line, strlen(line), 0);
     }
   }
 }
@@ -468,13 +467,13 @@ void receiveByeMessage(int connfd, char *userName) {
 
   sprintf(buf, "UOFF %s \r\n\r\n", userName);
 
-  Send(connfd, "BYE \r\n\r\n", sizeof("BYE \r\n\r\n"), 0);
+  Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
   deleteUser(&userList, userName);
 
   cur = userList.head;
 
   while(cur != NULL) {
-    Send(cur->connfd, buf, MAX_LEN, 0);
+    Send(cur->connfd, buf, strlen(buf), 0);
     cur = cur->next;
   }
 }
