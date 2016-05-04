@@ -5,8 +5,6 @@ int main(int argc, char **argv) {
   char hostname[MAX_HOSTNAME_LEN];
   char port[MAX_PORT_LEN];
 
-  //FILE *fp = NULL;
-
   fd_set readSet;
   fd_set readySet;
 
@@ -19,14 +17,12 @@ int main(int argc, char **argv) {
   parseOption(argc, argv, hostname, port);
   initializeUserList(&userList);
 
-  auditfd = open(auditFileName, O_WRONLY | O_CREAT | O_TRUNC);
-  printf("%d\n", auditfd);
+  auditfd = open(auditFileName, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
 
   if((clientfd = openClientFd(hostname, port)) == -1) {
     printError("Failed to connect on server\n");
     exit(EXIT_FAILURE);
   }
-  puts("TEST");
 
   if(login() == TRUE) {
     
@@ -51,7 +47,7 @@ int main(int argc, char **argv) {
   }
 
   close(clientfd);
-  //close(auditfd);
+  close(auditfd);
 
   return 0;
 }
