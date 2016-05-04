@@ -193,7 +193,7 @@ int promptPassword() {
     sprintf(buf, "PASS %s \r\n\r\n", pass);
   }
 
-  Send(clientfd, buf, MAX_LEN, 0);
+  Send(clientfd, buf, strlen(buf), 0);
   Recv(clientfd, buf, MAX_LEN, 0);
 
   if(strncmp(buf, "SSAPWEN ", 8) == 0 || strncmp(buf, "SSAP ", 5) == 0) {
@@ -298,7 +298,7 @@ void processChatMessage(char *to, char *from, char *msg) {
         sprintf(buf, "\e[94m[ %s ]\e[0m %s", name, msg);
       }
 
-      Send(socketfd[0], buf, MAX_LEN, 0);
+      Send(socketfd[0], buf, strlen(buf), 0);
     }
 
     communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
@@ -316,7 +316,7 @@ void processChatMessage(char *to, char *from, char *msg) {
       sprintf(buf, "\e[94m[ %s ]\e[0m %s", name, msg);
     }
 
-    Send(connfd, buf, MAX_LEN, 0);
+    Send(connfd, buf, strlen(buf), 0);
   }
 }
 
@@ -373,7 +373,7 @@ void chatCommand(char *line) {
   }
 
 	sprintf(buf, "MSG %s %s %s \r\n\r\n", to, name, msg);
-  Send(clientfd, buf, sizeof(buf), 0);
+  Send(clientfd, buf, strlen(buf), 0);
 }
 
 int verifyChatCommand(char *line, char *to, char *msg) {
@@ -428,7 +428,7 @@ void * communicationThread(void *argv) {
 
     if(strlen(msg) != 0) {
       sprintf(buf, "MSG %s %s %s \r\n\r\n", userName, name, msg);
-      Send(clientfd, buf, MAX_LEN, 0);
+      Send(clientfd, buf, strlen(buf), 0);
     }
   }
 
