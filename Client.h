@@ -21,6 +21,9 @@
 int clientfd;
 int auditfd;
 
+char hostname[MAX_HOSTNAME_LEN];
+char port[MAX_PORT_LEN];
+
 char auditFileName[MAX_FILE_LEN] = AUDIT_FILE_NAME;
 char name[MAX_NAME_LEN];
 UserList userList;

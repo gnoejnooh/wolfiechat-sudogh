@@ -2,9 +2,6 @@
 
 int main(int argc, char **argv) {
 
-  char hostname[MAX_HOSTNAME_LEN];
-  char port[MAX_PORT_LEN];
-
   fd_set readSet;
   fd_set readySet;
 
@@ -155,6 +152,7 @@ int login() {
       }
     }
   }
+  printLog(auditfd, name, "LOGIN", hostname, port, "success", motd);
 
   return loginSucceed;
 }
@@ -178,9 +176,11 @@ int authenticateUser() {
   } else if(strncmp(buf, "ERR 00", 5) == 0) {
     printError("User name taken\n");
     Recv(clientfd, buf, MAX_LEN, 0);
+    printLog(auditfd, name, "LOGIN", hostname, port, "failure", "ERR 00 USER NAME TAKEN");
   } else if(strncmp(buf, "ERR 01", 5) == 0) {
     printError("User not available\n");
     Recv(clientfd, buf, MAX_LEN, 0);
+    printLog(auditfd, name, "LOGIN", hostname, port, "failure", "ERR 01 USER NOT AVAILABLE");
   }
 
   return FALSE;
@@ -207,12 +207,13 @@ int promptPassword() {
     }
   } else {
     Recv(clientfd, buf, MAX_LEN, 0);
+    printLog(auditfd, name, "LOGIN", hostname, port, "failure", "ERR 02 BAD PASSWORD");
   }
   return FALSE;
 }
 
 void executeCommand() {
-  
+  char temp[MAX_EVENT_LEN];
   char buf[MAX_LEN];
   
   fgets(buf, MAX_LEN, stdin);
@@ -221,17 +222,21 @@ void executeCommand() {
     timeCommand();
   } else if(strcmp(buf, "/help\n") == 0) {
     printUsage();
+    printLog(auditfd, name, "CMD", "/help", "success", "client");
   } else if(strcmp(buf, "/logout\n") == 0) {
     logoutCommand();
+    printLog(auditfd, name, "CMD", "/logout", "success", "client");
+    printLog(auditfd, name, "LOGOUT", "intentional");
   } else if(strcmp(buf, "/listu\n") == 0) {
     listuCommand();
-    printLog(auditfd, name, "CMD", "/listu", "success", "client");
   } else if(strncmp(buf, "/chat", 5) == 0) {
   	chatCommand(buf);
   } else if(strcmp(buf, "/audit\n") == 0) {
     auditCommand();
   } else {
     printError("Command does not exist\n");
+    sscanf(buf, "%s", temp);
+    printLog(auditfd, name, "CMD", temp, "failure", "client");
   }
 }
 
@@ -253,6 +258,13 @@ void receiveChatMessage(char *line) {
   char msg[MAX_LEN];
 
   sscanf(line, "MSG %s %s %1024[^\n]", to, from, msg);
+
+
+  if(strcmp(name, to) == 0) {
+    printLog(auditfd, name, "MSG", "from", from, msg);
+  } else if(strcmp(name, from) == 0) {
+    printLog(auditfd, name, "MSG", "to", to, msg);
+  }
 
   processChatMessage(to, from, msg);
 }
@@ -341,6 +353,7 @@ void timeCommand() {
   sscanf(buf, "EMIT %ld \r\n\r\n", &duration);
   printf("Connected for %d hour(s) %d minute(s), and %d second(s)\n",
     (int)duration/3600, ((int)duration%3600)/60, ((int)duration%3600)%60);
+  printLog(auditfd, name, "CMD", "/time", "success", "client");
 }
 
 void logoutCommand() {
@@ -367,6 +380,7 @@ void listuCommand() {
       token = strtok(NULL, " \r\n");
     }
   }
+  printLog(auditfd, name, "CMD", "/listu", "success", "client");
 }
 
 void chatCommand(char *line) {
@@ -385,6 +399,8 @@ void chatCommand(char *line) {
 
 	sprintf(buf, "MSG %s %s %s \r\n\r\n", to, name, msg);
   Send(clientfd, buf, strlen(buf), 0);
+
+  printLog(auditfd, name, "CMD", "/chat", "success", "client");
 }
 
 void auditCommand() {
@@ -454,5 +470,6 @@ void * communicationThread(void *argv) {
 
 void sigintHandler(int signum) {
   logoutCommand();
+  printLog(auditfd, name, "LOGOUT", "error");
   exit(signum);
 }

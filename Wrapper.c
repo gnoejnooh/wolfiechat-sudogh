@@ -112,8 +112,6 @@ void printLog(int fd, char *userName, char *event, ...) {
 		strcat(buf, va_arg(ap, char*));
 	}
 	strcat(buf, "\n");
-	printf("%s", buf);
-	write(fd, "TEST", strlen("TEST"));
 	write(fd, buf, strlen(buf));
 }
 

@@ -16,6 +16,7 @@
 #define MAX_FILE_LEN		256
 #define MAX_HOSTNAME_LEN	256
 #define MAX_FD_LEN			8
+#define MAX_EVENT_LEN		16
 #define MAX_LISTU_LEN		65536
 #define MAX_BUF_LEN			65536
 
