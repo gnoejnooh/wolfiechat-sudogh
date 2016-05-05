@@ -5,10 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sqlite3.h>
+#include <pthread.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include "Constant.h"
 #include "Wrapper.h"
+
+extern pthread_mutex_t Q_lock;
 
 typedef struct passwordInfo {
 	char hash[SHA256_DIGEST_LENGTH*2+1];

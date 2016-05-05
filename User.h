@@ -4,7 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include "Constant.h"
+#include "sfwrite.h"
+
+extern pthread_mutex_t Q_lock;
 
 typedef struct user {
 	char userName[MAX_NAME_LEN];

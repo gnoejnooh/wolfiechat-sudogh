@@ -144,7 +144,7 @@ int login() {
 
           if(strncmp(buf, "MOTD ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
             sscanf(buf, "MOTD %s \r\n\r\n", motd);
-            printf("%s\n", motd); 
+            sfwrite(&Q_lock, stdout, "%s\n", motd); 
 
             loginSucceed = TRUE;
             printLoginLog(auditfd, name, hostname, port, TRUE, motd);
@@ -353,7 +353,7 @@ int timeCommand() {
 
   if(strncmp(buf, "EMIT ", 5) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     sscanf(buf, "EMIT %ld \r\n\r\n", &duration);
-    printf("Connected for %d hour(s) %d minute(s), and %d second(s)\n",
+    sfwrite(&Q_lock, stdout, "Connected for %d hour(s) %d minute(s), and %d second(s)\n",
       (int)duration/3600, ((int)duration%3600)/60, ((int)duration%3600)%60);
 
     return TRUE;
@@ -388,7 +388,7 @@ int listuCommand() {
     token = strtok(buf, " \r\n");
     token = strtok(NULL, " \r\n");
     while(token != NULL) {
-      printf("USERNAME: %s\n", token);
+      sfwrite(&Q_lock, stdout, "USERNAME: %s\n", token);
       token = strtok(NULL, " \r\n");
     }
 
@@ -436,19 +436,19 @@ int verifyChatCommand(char *line, char *to, char *msg) {
 }
 
 void printUsage() {
-  fprintf(stderr, "USAGE: ./client [-hcv] NAME SERVER_IP SERVER_PORT\n");
-  fprintf(stderr, "-h                 Displays help menu & returns EXIT_SUCCESS.\n");
-  fprintf(stderr, "-c                 Request to server to create a new user\n");
-  fprintf(stderr, "-v                 Verbose print all incoming and outgoing protocol verbs & content.\n");
-  fprintf(stderr, "NAME               This is the username to display when chatting\n");
-  fprintf(stderr, "SERVER_IP          The ipaddress of the server to connect to\n");
-  fprintf(stderr, "SERVER_PORT        The port to connect to\n");
-  fprintf(stderr, "\nClient Commands\n");
-  fprintf(stderr, "/time              Display the time client has been connected to the server\n");
-  fprintf(stderr, "/help              Display usage statement\n");
-  fprintf(stderr, "/logout            Logout from the server\n");
-  fprintf(stderr, "/listu             Display a list of active user in current server\n");
-  fprintf(stderr, "/chat <to> <msg>   Send message to indicated user\n");
+  sfwrite(&Q_lock, stderr, "USAGE: ./client [-hcv] NAME SERVER_IP SERVER_PORT\n");
+  sfwrite(&Q_lock, stderr, "-h                 Displays help menu & returns EXIT_SUCCESS.\n");
+  sfwrite(&Q_lock, stderr, "-c                 Request to server to create a new user\n");
+  sfwrite(&Q_lock, stderr, "-v                 Verbose print all incoming and outgoing protocol verbs & content.\n");
+  sfwrite(&Q_lock, stderr, "NAME               This is the username to display when chatting\n");
+  sfwrite(&Q_lock, stderr, "SERVER_IP          The ipaddress of the server to connect to\n");
+  sfwrite(&Q_lock, stderr, "SERVER_PORT        The port to connect to\n");
+  sfwrite(&Q_lock, stderr, "\nClient Commands\n");
+  sfwrite(&Q_lock, stderr, "/time              Display the time client has been connected to the server\n");
+  sfwrite(&Q_lock, stderr, "/help              Display usage statement\n");
+  sfwrite(&Q_lock, stderr, "/logout            Logout from the server\n");
+  sfwrite(&Q_lock, stderr, "/listu             Display a list of active user in current server\n");
+  sfwrite(&Q_lock, stderr, "/chat <to> <msg>   Send message to indicated user\n");
 }
 
 void * communicationThread(void *argv) {

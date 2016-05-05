@@ -18,12 +18,15 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include "Constant.h"
+#include "sfwrite.h"
 #include "Wrapper.h"
 #include "Database.h"
 #include "User.h"
 
 sqlite3 *db;
 UserList userList;
+
+extern pthread_mutex_t Q_lock;
 
 extern int verboseFlag;
 int runFlag;
@@ -46,7 +49,6 @@ void executeCommand();
 
 void shutdownCommand();
 
-void printPrompt();
 void printUsage();
 
 void * loginThread(void *argv);

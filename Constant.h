@@ -1,6 +1,8 @@
 #ifndef __CONSTANT_H__
 #define __CONSTANT_H__
 
+#include <pthread.h>
+
 #define TRUE				1
 #define	FALSE				0
 
@@ -24,5 +26,7 @@
 #define AUDIT_FILE_NAME		"audit.log"
 
 #define BACKLOG				128
+
+pthread_mutex_t Q_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #endif

@@ -87,11 +87,11 @@ void printAllUserInfo(UserList userList) {
 
 	int i;
 
-	printf("There is %d user(s) exist.\n", userList.count);
+	sfwrite(&Q_lock, stdout, "There is %d user(s) exist.\n", userList.count);
 
 	for(i=0; i<userList.count; i++) {
 		next = cur->next;
-		printf("USERNAME: %-20s\n", cur->userName);
+		sfwrite(&Q_lock, stdout, "USERNAME: %-20s\n", cur->userName);
 		cur = next;
 	}
 }

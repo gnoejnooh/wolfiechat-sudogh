@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include "Constant.h"
 #include "Wrapper.h"
+#include "sfwrite.h"
 #include "User.h"
 
 int clientfd;
@@ -26,6 +27,8 @@ char auditFileName[MAX_FILE_LEN] = AUDIT_FILE_NAME;
 char name[MAX_NAME_LEN];
 char hostname[MAX_HOSTNAME_LEN];
 char port[MAX_PORT_LEN];
+
+extern pthread_mutex_t Q_lock;
 
 UserList userList;
 
