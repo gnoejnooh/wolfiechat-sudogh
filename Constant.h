@@ -27,6 +27,7 @@
 
 #define BACKLOG				128
 
-pthread_mutex_t Q_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_rwlock_t RW_lock;
+pthread_mutex_t Q_lock;
 
 #endif

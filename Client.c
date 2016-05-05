@@ -1,5 +1,7 @@
 #include "Client.h"
 
+pthread_mutex_t Q_lock = PTHREAD_MUTEX_INITIALIZER;
+
 int main(int argc, char **argv) {
 
   fd_set readSet;
@@ -8,6 +10,9 @@ int main(int argc, char **argv) {
   runFlag = TRUE;
   verboseFlag = FALSE;
   createUserFlag = FALSE;
+
+  pthread_rwlock_init(&RW_lock, NULL);
+  pthread_mutex_init(&Q_lock, NULL);
 
   signal(SIGINT, sigintHandler);
 
@@ -254,6 +259,7 @@ void receiveMessage() {
     receiveChatMessage(buf);
   } else if(strncmp(buf, "ERR 01", 5) == 0) {
     printError("User not avaiable\n");
+    printErrLog(auditfd, name, "ERR 01 USER NOT AVAILABLE");
   }
 }
 
@@ -470,6 +476,11 @@ void * communicationThread(void *argv) {
     if(strcmp(msg, "/close") == 0) {
       deleteUser(&userList, userName);
       printCmdLog(auditfd, name, "/close", TRUE, "chat");
+      break;
+    }
+
+    if(strcmp(msg, "/exit") == 0) {
+      deleteUser(&userList, userName);
       break;
     }
 

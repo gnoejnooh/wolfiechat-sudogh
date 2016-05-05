@@ -9,8 +9,11 @@
 #include <sys/socket.h>
 #include <sys/file.h>
 #include "Constant.h"
+#include "sfwrite.h"
 
 char localBuffer[MAX_BUF_LEN];
+
+extern pthread_mutex_t Q_lock;
 
 int verboseFlag;
 
@@ -27,5 +30,6 @@ void printErrLog(int fd, char *userName, char *msg);
 void getTimeStamp(char *timeStamp);
 
 void printError(char *msg);
+
 
 #endif

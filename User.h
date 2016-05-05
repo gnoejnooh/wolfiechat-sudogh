@@ -8,7 +8,7 @@
 #include "Constant.h"
 #include "sfwrite.h"
 
-extern pthread_mutex_t Q_lock;
+extern pthread_rwlock_t RW_lock;
 
 typedef struct user {
 	char userName[MAX_NAME_LEN];

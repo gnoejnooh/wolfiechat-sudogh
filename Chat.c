@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 			fgets(buf, MAX_LEN, stdin);
 			buf[strlen(buf)-1] = '\0';
 
-			send(chatfd, buf, sizeof(buf), 0);
+			send(chatfd, buf, strlen(buf), 0);
 
 			if(strcmp(buf, "/close") == 0) {
 				break;
@@ -45,11 +45,11 @@ int main(int argc, char** argv) {
 }
 
 void sigintHandler(int signum) {
-  send(chatfd, "/close", sizeof("/close"), 0);
+  send(chatfd, "/exit", strlen("/exit"), 0);
   exit(EXIT_FAILURE);
 }
 
 void sighupHandler(int signum) {
-  send(chatfd, "/close", sizeof("/close"), 0);
+  send(chatfd, "/exit", strlen("/exit"), 0);
   exit(EXIT_FAILURE);
 }

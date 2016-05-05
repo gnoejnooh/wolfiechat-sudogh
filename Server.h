@@ -26,6 +26,7 @@
 sqlite3 *db;
 UserList userList;
 
+extern pthread_rwlock_t RW_lock;
 extern pthread_mutex_t Q_lock;
 
 extern int verboseFlag;

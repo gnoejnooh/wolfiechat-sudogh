@@ -1,5 +1,7 @@
 #include "Server.h"
 
+pthread_mutex_t Q_lock = PTHREAD_MUTEX_INITIALIZER;
+
 int main(int argc, char **argv) {
   
   int listenfd;
@@ -25,6 +27,8 @@ int main(int argc, char **argv) {
 
   verboseFlag = FALSE;
   runFlag = TRUE;
+  pthread_rwlock_init(&RW_lock, NULL);
+  pthread_mutex_init(&Q_lock, NULL);
 
   parseOption(argc, argv, port, motd, accountsFile);
 

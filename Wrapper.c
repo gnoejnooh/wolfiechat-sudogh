@@ -13,7 +13,7 @@ void Send(int socket, const void *buffer, size_t length, int flags) {
 		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
 			msg[strlen(msg)-5] = '\0';
 		}
-		printf("\x1B[1;34mOutgoing: %s\x1B[0m\n", msg);
+		sfwrite(&Q_lock, stdout, "\x1B[1;34mOutgoing: %s\x1B[0m\n", msg);
 	}
 }
 
@@ -50,7 +50,7 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
 			msg[strlen(msg)-5] = '\0';
 		}
-		printf("\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
+		sfwrite(&Q_lock, stdout, "\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
 	}
 }
 
@@ -66,7 +66,7 @@ void RecvChat(int socket, void *buffer, size_t length, int flags) {
 
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
-		printf("\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
+		sfwrite(&Q_lock, stdout, "\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
 	}
 }
 
@@ -158,7 +158,7 @@ void getTimeStamp(char *timeStamp) {
 }
 
 void printError(char *msg) {
-  fprintf(stderr, "\x1B[1;31mERROR: ");
-  fprintf(stderr, "%s", msg);
-  fprintf(stderr, "\x1B[0m");
+  sfwrite(&Q_lock, stderr, "\x1B[1;31mERROR: ");
+  sfwrite(&Q_lock, stderr, "%s", msg);
+  sfwrite(&Q_lock, stderr, "\x1B[0m");
 }

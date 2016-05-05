@@ -9,9 +9,10 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include "Constant.h"
+#include "sfwrite.h"
 #include "Wrapper.h"
 
-extern pthread_mutex_t Q_lock;
+extern pthread_rwlock_t RW_lock;
 
 typedef struct passwordInfo {
 	char hash[SHA256_DIGEST_LENGTH*2+1];
