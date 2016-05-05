@@ -21,11 +21,12 @@
 int clientfd;
 int auditfd;
 
+char auditFileName[MAX_FILE_LEN] = AUDIT_FILE_NAME;
+
+char name[MAX_NAME_LEN];
 char hostname[MAX_HOSTNAME_LEN];
 char port[MAX_PORT_LEN];
 
-char auditFileName[MAX_FILE_LEN] = AUDIT_FILE_NAME;
-char name[MAX_NAME_LEN];
 UserList userList;
 
 int runFlag;
@@ -37,8 +38,8 @@ typedef struct communicationThreadParam {
 	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
 
-void parseOption(int argc, char **argv, char *hostname, char *port);
-int openClientFd(char *hostname, char *port);
+void parseOption(int argc, char **argv);
+int openClientFd();
 int login();
 void executeCommand();
 void receiveMessage();
@@ -49,11 +50,11 @@ int promptPassword();
 void receiveChatMessage(char *line);
 void processChatMessage(char *to, char *from, char *msg);
 
-void timeCommand();
-void logoutCommand();
-void listuCommand();
-void chatCommand(char *line);
-void auditCommand();
+int timeCommand();
+int logoutCommand();
+int listuCommand();
+int chatCommand(char *line);
+int auditCommand();
 
 int verifyChatCommand(char *line, char *to, char *msg);
 

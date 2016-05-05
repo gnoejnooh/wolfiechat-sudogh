@@ -70,49 +70,91 @@ void RecvChat(int socket, void *buffer, size_t length, int flags) {
 	}
 }
 
-void printLog(int fd, char *userName, char *event, ...) {
-	va_list ap;
-	
-	time_t rawTime;
-	struct tm *info;
-
+void printLoginLog(int fd, char *userName, char *ip, char *port, int isSucceed, char *msg) {
 	char buf[MAX_LEN];
+	char timeStamp[MAX_TIME_LEN];
+
+	getTimeStamp(timeStamp);
+
+	if(isSucceed == TRUE) {
+		sprintf(buf, "%s, %s, LOGIN, %s:%s, success, %s\n", timeStamp, userName, ip, port, msg);
+	} else {
+		sprintf(buf, "%s, %s, LOGIN, %s:%s, fail, %s\n", timeStamp, userName, ip, port, msg);
+	}
+
+	flock(fd, LOCK_EX);
+	write(fd, buf, strlen(buf));
+	flock(fd, LOCK_UN);
+}
+
+void printCmdLog(int fd, char *userName, char *command, int isSucceed, char *origin) {
+	char buf[MAX_LEN];
+	char timeStamp[MAX_TIME_LEN];
+
+	getTimeStamp(timeStamp);
+
+	if(isSucceed == TRUE) {
+		sprintf(buf, "%s, %s, CMD, %s, success, %s\n", timeStamp, userName, command, origin);
+	} else {
+		sprintf(buf, "%s, %s, CMD, %s, fail, %s\n", timeStamp, userName, command, origin);
+	}
+	
+	flock(fd, LOCK_EX);
+	write(fd, buf, strlen(buf));
+	flock(fd, LOCK_UN);
+}
+
+void printMsgLog(int fd, char *userName, char *origin, char *partner, char *msg) {
+	char buf[MAX_LEN];
+	char timeStamp[MAX_TIME_LEN];
+
+	getTimeStamp(timeStamp);
+
+	sprintf(buf, "%s, %s, MSG, %s, %s, %s\n", timeStamp, userName, origin, partner, msg);
+
+	flock(fd, LOCK_EX);
+	write(fd, buf, strlen(buf));
+	flock(fd, LOCK_UN);
+}
+
+void printLogoutLog(int fd, char *userName, int isIntentional) {
+	char buf[MAX_LEN];
+	char timeStamp[MAX_TIME_LEN];
+
+	getTimeStamp(timeStamp);
+
+	if(isIntentional == TRUE) {
+		sprintf(buf, "%s, %s, LOGOUT, intentional\n", timeStamp, userName);
+	} else {
+		sprintf(buf, "%s, %s, LOGOUT, error\n", timeStamp, userName);
+	}
+
+	flock(fd, LOCK_EX);
+	write(fd, buf, strlen(buf));
+	flock(fd, LOCK_UN);
+}
+
+void printErrLog(int fd, char *userName, char *msg) {
+	char buf[MAX_LEN];
+	char timeStamp[MAX_TIME_LEN];
+
+	getTimeStamp(timeStamp);
+
+	sprintf(buf, "%s, %s, ERR, %s\n", timeStamp, userName, msg);
+
+	flock(fd, LOCK_EX);
+	write(fd, buf, strlen(buf));
+	flock(fd, LOCK_UN);
+}
+
+void getTimeStamp(char *timeStamp) {
+	time_t rawTime;
+	struct tm *timeInfo;
 
 	time(&rawTime);
-	info = localtime(&rawTime);
-	strftime(buf, MAX_LEN, "%x-%I:%M%p, ", info);
-	strcat(buf, userName);
-	strcat(buf, ", ");
-	strcat(buf, event);
-	strcat(buf, ", ");
-	va_start(ap, event);
-	if(strcmp(event, "LOGIN") == 0) {
-		strcat(buf, va_arg(ap, char *));
-		strcat(buf, ":");
-		strcat(buf, va_arg(ap, char *));
-		strcat(buf, ", ");
-		strcat(buf, va_arg(ap, char *));
-		strcat(buf, ", ");
-		strcat(buf, va_arg(ap, char *));
-	} else if(strcmp(event, "CMD")) {
-		strcat(buf, va_arg(ap, char *));
-		strcat(buf, ", ");
-		strcat(buf, va_arg(ap, char *));
-		strcat(buf, ", ");
-		strcat(buf, va_arg(ap, char *));
-	} else if(strcmp(event, "MSG")) {
-		strcat(buf, va_arg(ap, char *));
-		strcat(buf, ", ");
-		strcat(buf, va_arg(ap, char *));
-		strcat(buf, ", ");
-		strcat(buf, va_arg(ap, char *));
-	} else if(strcmp(event, "LOGOUT")) {
-		strcat(buf, va_arg(ap, char *));
-	} else if(strcmp(event, "ERR")) {
-		strcat(buf, va_arg(ap, char *));
-	}
-	strcat(buf, "\n");
-	write(fd, buf, strlen(buf));
+	timeInfo = localtime(&rawTime);
+
+	strftime(timeStamp, MAX_TIME_LEN, "%D-%I:%M%p", timeInfo);
 }
 
 void printError(char *msg) {

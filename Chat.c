@@ -2,14 +2,12 @@
 
 int main(int argc, char** argv) {
 	
-	//int auditfd;
 	char buf[MAX_LEN];
 
 	fd_set readSet;
 	fd_set readySet;
 
 	chatfd = atoi(argv[1]);
-	//auditfd = atoi(argv[2]);
 
 	memset(buf, 0, MAX_LEN);
 
