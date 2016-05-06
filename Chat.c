@@ -7,7 +7,12 @@ int main(int argc, char** argv) {
 	fd_set readSet;
 	fd_set readySet;
 
+	int auditfd;
+
 	chatfd = atoi(argv[1]);
+	auditfd = atoi(argv[2]);
+
+	printf("%d\n", auditfd);
 
 	memset(buf, 0, MAX_LEN);
 
@@ -45,11 +50,11 @@ int main(int argc, char** argv) {
 }
 
 void sigintHandler(int signum) {
-  send(chatfd, "/exit", strlen("/exit"), 0);
+  send(chatfd, "/close", strlen("/close"), 0);
   exit(EXIT_FAILURE);
 }
 
 void sighupHandler(int signum) {
-  send(chatfd, "/exit", strlen("/exit"), 0);
+  send(chatfd, "/close", strlen("/close"), 0);
   exit(EXIT_FAILURE);
 }

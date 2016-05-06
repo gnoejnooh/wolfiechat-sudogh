@@ -287,6 +287,7 @@ void processChatMessage(char *to, char *from, char *msg) {
     {"/usr/bin/xterm", "-geometry", "45x35", "-background", "gray15",
     "-fa", "Monospace", "-fs", "12"};
   char fd[MAX_FD_LEN];
+  char logfd[MAX_FD_LEN];
 
   char userName[MAX_NAME_LEN];
 
@@ -305,15 +306,16 @@ void processChatMessage(char *to, char *from, char *msg) {
 
     sprintf(buf, "WOLFIE CHAT with %s \n", userName);
     sprintf(fd, "%d", socketfd[1]);
+    sprintf(logfd, "%d", auditfd);
     cmd[9] = "-T";
     cmd[10] = buf;
     cmd[11] = "-e";
     cmd[12] = "./chat";
     cmd[13] = fd;
+    cmd[14] = logfd;
     cmd[14] = (void *)NULL;
 
     if((pid = fork()) == 0) {
-
       close(socketfd[0]);
       execv(cmd[0], cmd);
       exit(EXIT_SUCCESS);
@@ -474,11 +476,6 @@ void * communicationThread(void *argv) {
     if(strcmp(msg, "/close") == 0) {
       deleteUser(&userList, userName);
       printCmdLog(auditfd, name, "/close", TRUE, "chat");
-      break;
-    }
-
-    if(strcmp(msg, "/exit") == 0) {
-      deleteUser(&userList, userName);
       break;
     }
 

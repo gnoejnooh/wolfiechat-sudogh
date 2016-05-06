@@ -33,18 +33,31 @@ extern int verboseFlag;
 int runFlag;
 int numThread;
 
-typedef struct loginThreadParam {
-	pthread_t tid;
-	int *connfd;
-	char motd[MAX_LEN];
-} LoginThreadParam;
+char motd[MAX_LEN];
+
+typedef struct loginQueue {
+	int *connfds;
+	int numThread;
+	int frontConnfd;
+	int rearConnfd;
+	sem_t mutex;
+	sem_t slots;
+	sem_t items;
+} LoginQueue;
+
+LoginQueue *loginQueue;
 
 typedef struct communicationThreadParam {
 	int connfd;
 	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
 
-void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFile);
+void initializeLoginQueue(LoginQueue *loginQueue, int numThread);
+void freeLoginQueue(LoginQueue *loginQueue);
+void loginEnqueue(LoginQueue *loginQueue, int connfd);
+int loginDequeue(LoginQueue *loginQueue);
+
+void parseOption(int argc, char **argv, char *port, char *accountsFile);
 int openListenFd(char *port);
 void executeCommand();
 

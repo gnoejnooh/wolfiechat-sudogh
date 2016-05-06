@@ -3,13 +3,12 @@
 int main(int argc, char **argv) {
   
   int listenfd;
-  int *connfd = NULL;
+  int connfd;
 
   fd_set readSet;
   fd_set readySet;
 
   char port[MAX_PORT_LEN];
-  char motd[MAX_LEN];
   char accountsFile[MAX_FILE_LEN];
 
   struct sockaddr_in *connAddr = malloc(sizeof(struct sockaddr_in));
@@ -17,7 +16,7 @@ int main(int argc, char **argv) {
 
   pthread_t tid;
 
-  LoginThreadParam *loginThreadParam = NULL;
+  int i;
 
   signal(SIGINT, sigintHandler);
 
@@ -25,10 +24,16 @@ int main(int argc, char **argv) {
 
   verboseFlag = FALSE;
   runFlag = TRUE;
+
+  numThread = 2;
+
   pthread_rwlock_init(&RW_lock, NULL);
   pthread_mutex_init(&Q_lock, NULL);
 
-  parseOption(argc, argv, port, motd, accountsFile);
+  parseOption(argc, argv, port, accountsFile);
+
+  loginQueue = malloc(sizeof(LoginQueue));
+  initializeLoginQueue(loginQueue, numThread);
 
   openDatabase(&db, accountsFile);
   initializeUserList(&userList);
@@ -38,6 +43,10 @@ int main(int argc, char **argv) {
   FD_ZERO(&readSet);
   FD_SET(STDIN, &readSet);
   FD_SET(listenfd, &readSet);
+
+  for(i=0; i<numThread; i++) {
+    pthread_create(&tid, NULL, loginThread, NULL);
+  }
 
   sfwrite(&Q_lock, stdout, "Currently listening on port %s\n", port);
 
@@ -55,16 +64,8 @@ int main(int argc, char **argv) {
 
     if(FD_ISSET(listenfd, &readySet)) {
       connLen = sizeof(struct sockaddr_in);
-      loginThreadParam = malloc(sizeof(LoginThreadParam));
-      connfd = malloc(sizeof(int));
-    
-      if((*connfd = accept(listenfd, (struct sockaddr *)connAddr, &connLen)) != -1) {
-        loginThreadParam->connfd = connfd;
-        strcpy(loginThreadParam->motd, motd);
-        pthread_create(&tid, NULL, loginThread, loginThreadParam);
-      } else {
-        free(connfd);
-      }
+      connfd = accept(listenfd, (struct sockaddr *)connAddr, &connLen);
+      loginEnqueue(loginQueue, connfd);
     }
   }
 
@@ -72,10 +73,45 @@ int main(int argc, char **argv) {
   close(listenfd);
   free(connAddr);
   freeUserList(&userList);
+  freeLoginQueue(loginQueue);
+  free(loginQueue);
   return EXIT_SUCCESS;
 }
 
-void parseOption(int argc, char **argv, char *port, char *motd, char *accountsFile) {
+void initializeLoginQueue(LoginQueue *loginQueue, int numThread) {
+  loginQueue->connfds = malloc(sizeof(int) * numThread);
+  loginQueue->numThread = numThread;
+  loginQueue->frontConnfd = 0;
+  loginQueue->rearConnfd = 0;
+
+  sem_init(&(loginQueue->mutex), 0, 1);
+  sem_init(&(loginQueue->slots), 0, numThread);
+  sem_init(&(loginQueue->items), 0, 0);
+}
+
+void freeLoginQueue(LoginQueue *loginQueue) {
+  free(loginQueue->connfds);
+}
+
+void loginEnqueue(LoginQueue *loginQueue, int connfd) {
+  sem_wait(&(loginQueue->slots));
+  sem_wait(&(loginQueue->mutex));
+  loginQueue->connfds[(++(loginQueue->rearConnfd)%(loginQueue->numThread))] = connfd;
+  sem_post(&(loginQueue->mutex));
+  sem_post(&(loginQueue->items));
+}
+
+int loginDequeue(LoginQueue *loginQueue) {
+  int connfd;
+  sem_wait(&(loginQueue->items));
+  sem_wait(&(loginQueue->mutex));
+  connfd = loginQueue->connfds[(++(loginQueue->frontConnfd)%(loginQueue->numThread))];
+  sem_post(&(loginQueue->mutex));
+  sem_post(&(loginQueue->slots));
+  return connfd;
+}
+
+void parseOption(int argc, char **argv, char *port, char *accountsFile) {
 
   int opt;
 
@@ -210,40 +246,40 @@ void printUsage() {
 }
 
 void * loginThread(void *argv) {
-  LoginThreadParam *param = (LoginThreadParam *)argv;
-  int connfd = *(param->connfd);
-  char motd[MAX_LEN];
 
   pthread_t tid;
 
   char buf[MAX_LEN];
   char userName[MAX_NAME_LEN];
 
-  strcpy(motd, param->motd);
+  int connfd;
 
   pthread_detach(pthread_self());
-  free(param->connfd);
-  free(argv);
 
-  Recv(connfd, buf, MAX_LEN, 0);
+  while(TRUE) {
 
-  if(strcmp(buf, "WOLFIE \r\n\r\n") == 0) {
+    connfd = loginDequeue(loginQueue);
+
+    Recv(connfd, buf, MAX_LEN, 0);
+
+    if(strcmp(buf, "WOLFIE \r\n\r\n") == 0) {
     
-    Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0);
+      Send(connfd, "EIFLOW \r\n\r\n", strlen("EIFLOW \r\n\r\n"), 0);
 
-    if(authenticateUser(connfd, userName) == TRUE) {
-      if(promptPassword(connfd, userName) == TRUE) {
-        sprintf(buf, "HI %s \r\n\r\n", userName);
-        Send(connfd, buf, strlen(buf), 0);
-        insertUser(&userList, userName, connfd);
+      if(authenticateUser(connfd, userName) == TRUE) {
+        if(promptPassword(connfd, userName) == TRUE) {
+          sprintf(buf, "HI %s \r\n\r\n", userName);
+          Send(connfd, buf, strlen(buf), 0);
+          insertUser(&userList, userName, connfd);
 
-        sprintf(buf, "MOTD %s \r\n\r\n", motd);
-        Send(connfd, buf, strlen(buf), 0);
+          sprintf(buf, "MOTD %s \r\n\r\n", motd);
+          Send(connfd, buf, strlen(buf), 0);
 
-        CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
-        communicationThreadParam->connfd = connfd;
-        strcpy(communicationThreadParam->userName, userName);
-        pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
+          CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
+          communicationThreadParam->connfd = connfd;
+          strcpy(communicationThreadParam->userName, userName);
+          pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
+        }
       }
     }
   }
