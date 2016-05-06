@@ -283,7 +283,7 @@ void processChatMessage(char *to, char *from, char *msg) {
   int pid;
   char buf[MAX_LEN];
 
-  char *cmd[MAX_NAME_LEN] =
+  char *cmd[MAX_ARGS_LEN] =
     {"/usr/bin/xterm", "-geometry", "45x35", "-background", "gray15",
     "-fa", "Monospace", "-fs", "12"};
   char fd[MAX_FD_LEN];
@@ -313,7 +313,8 @@ void processChatMessage(char *to, char *from, char *msg) {
     cmd[12] = "./chat";
     cmd[13] = fd;
     cmd[14] = logfd;
-    cmd[14] = (void *)NULL;
+    cmd[15] = name;
+    cmd[16] = (void *)NULL;
 
     if((pid = fork()) == 0) {
       close(socketfd[0]);
@@ -475,7 +476,6 @@ void * communicationThread(void *argv) {
 
     if(strcmp(msg, "/close") == 0) {
       deleteUser(&userList, userName);
-      printCmdLog(auditfd, name, "/close", TRUE, "chat");
       break;
     }
 

@@ -3,6 +3,7 @@
 int main(int argc, char** argv) {
 	
 	char buf[MAX_LEN];
+	char name[MAX_NAME_LEN];
 
 	fd_set readSet;
 	fd_set readySet;
@@ -11,8 +12,7 @@ int main(int argc, char** argv) {
 
 	chatfd = atoi(argv[1]);
 	auditfd = atoi(argv[2]);
-
-	printf("%d\n", auditfd);
+	strcpy(name, argv[3]);
 
 	memset(buf, 0, MAX_LEN);
 
@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
 			send(chatfd, buf, strlen(buf), 0);
 
 			if(strcmp(buf, "/close") == 0) {
+				printCmdLog(auditfd, name, "/close", TRUE, "chat");
 				break;
 			}
 		}
@@ -42,6 +43,7 @@ int main(int argc, char** argv) {
 			memset(buf, 0, MAX_LEN);
 			recv(chatfd, buf, MAX_LEN, 0);
 			printf("%s\n", buf);
+			fflush(stdout);
 		}
 	}
 
