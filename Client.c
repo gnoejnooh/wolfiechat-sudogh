@@ -1,7 +1,5 @@
 #include "Client.h"
 
-pthread_mutex_t Q_lock = PTHREAD_MUTEX_INITIALIZER;
-
 int main(int argc, char **argv) {
 
   fd_set readSet;

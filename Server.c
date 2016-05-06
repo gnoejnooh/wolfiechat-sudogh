@@ -1,7 +1,5 @@
 #include "Server.h"
 
-pthread_mutex_t Q_lock = PTHREAD_MUTEX_INITIALIZER;
-
 int main(int argc, char **argv) {
   
   int listenfd;
