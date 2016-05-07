@@ -1,4 +1,4 @@
-all: server client chat
+all: server client chat auditlog_cli
 
 sfwrite.o: sfwrite.c
 	gcc -Wall -Werror -c sfwrite.c
@@ -19,7 +19,10 @@ server: Server.c Database.o User.o Wrapper.o sfwrite.o
 	gcc -Wall -Werror -o server Server.c Database.o User.o Wrapper.o sfwrite.o -pthread -lssl -lcrypto -lsqlite3 
 
 client: Client.c User.o Wrapper.o sfwrite.o
-	gcc -Wall -Werror -o client Client.c User.o Wrapper.o sfwrite.o -pthread 
+	gcc -Wall -Werror -o client Client.c User.o Wrapper.o sfwrite.o -pthread
+
+auditlog_cli: auditlog_cli.c
+	gcc -Wall -Werror -o auditlog_cli auditlog_cli.c
 
 clean:
 	rm -f *~ *.o server client chat
