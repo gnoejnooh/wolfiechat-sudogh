@@ -31,7 +31,12 @@ extern pthread_mutex_t Q_lock;
 
 extern int verboseFlag;
 int runFlag;
+int communicationFlag;
+
 int numThread;
+
+fd_set communicationSet;
+int maxConnfd;
 
 char motd[MAX_LEN];
 
@@ -46,12 +51,12 @@ typedef struct loginQueue {
 } LoginQueue;
 
 LoginQueue *loginQueue;
-
+/*
 typedef struct communicationThreadParam {
 	int connfd;
 	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
-
+*/
 void initializeLoginQueue(LoginQueue *loginQueue, int numThread);
 void freeLoginQueue(LoginQueue *loginQueue);
 void loginEnqueue(LoginQueue *loginQueue, int connfd);

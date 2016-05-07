@@ -24,7 +24,9 @@ int main(int argc, char **argv) {
 
   verboseFlag = FALSE;
   runFlag = TRUE;
+  communicationFlag = FALSE;
 
+  maxConnfd = -1;
   numThread = 2;
 
   pthread_rwlock_init(&RW_lock, NULL);
@@ -275,10 +277,16 @@ void * loginThread(void *argv) {
           sprintf(buf, "MOTD %s \r\n\r\n", motd);
           Send(connfd, buf, strlen(buf), 0);
 
-          CommunicationThreadParam *communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
-          communicationThreadParam->connfd = connfd;
-          strcpy(communicationThreadParam->userName, userName);
-          pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
+          if(communicationFlag == FALSE) {
+            FD_ZERO(&communicationSet);
+            FD_SET(connfd, &communicationSet);
+            communicationFlag = TRUE;
+            maxConnfd = connfd;
+            pthread_create(&tid, NULL, communicationThread, NULL);
+          } else {
+            FD_SET(connfd, &communicationSet);
+            maxConnfd = (connfd > maxConnfd) ? connfd : maxConnfd;
+          }      
         }
       }
     }
@@ -403,34 +411,39 @@ int verifyPasswordCriteria(char *password) {
 
 void * communicationThread(void *argv) {
 
-  CommunicationThreadParam *param = (CommunicationThreadParam *)argv;
-  int connfd = param->connfd;
+  char buf[MAX_LEN];
   char userName[MAX_NAME_LEN];
 
-  char buf[MAX_LEN];
   time_t begin = time(NULL);
 
-  strcpy(userName, param->userName);
+  int i;
 
   pthread_detach(pthread_self());
-  free(argv);
 
   while(TRUE) {
-    Recv(connfd, buf, MAX_LEN, 0);
+    select(maxConnfd+1, &communicationSet, NULL, NULL, NULL);
 
-    if(strcmp(buf, "TIME \r\n\r\n") == 0) {
-      receiveTimeMessage(connfd, begin);
-    } else if(strcmp(buf, "LISTU \r\n\r\n") == 0) {
-      receiveListuMessage(connfd);
-    } else if(strncmp(buf, "MSG", 3) == 0) {
-      receiveChatMessage(connfd, buf);
-    } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
-      receiveByeMessage(connfd, userName);
-      break;
+    for(i=3; i<maxConnfd+1; i++) {
+      if(FD_ISSET(i, &communicationSet)) {
+        Recv(i, buf, MAX_LEN, 0);
+
+        if(strcmp(buf, "TIME \r\n\r\n") == 0) {
+          puts("TEST");
+          receiveTimeMessage(i, begin);
+        } else if(strcmp(buf, "LISTU \r\n\r\n") == 0) {
+          receiveListuMessage(i);
+        } else if(strncmp(buf, "MSG", 3) == 0) {
+          puts("TEST");
+          receiveChatMessage(i, buf);
+        } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
+          matchUser(userList, userName, i);
+          receiveByeMessage(i, userName);
+          close(i);
+          FD_CLR(i, &communicationSet);
+        }
+      }
     }
   }
-
-  close(connfd);
 
   return NULL;
 }

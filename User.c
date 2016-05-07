@@ -136,6 +136,22 @@ User * findUser(UserList userList, char *userName) {
 	return NULL;
 }
 
+void matchUser(UserList userList, char *userName, int connfd) {
+	User *cur = userList.head;
+	User *next = NULL;
+
+	int i;
+	pthread_rwlock_rdlock(&RW_lock);
+	for(i=0; i<userList.count; i++) {
+		next = cur->next;
+		if(cur->connfd == connfd) {
+			strcpy(userName, cur->userName);
+		}
+		cur = next;
+	}
+	pthread_rwlock_unlock(&RW_lock);
+}
+
 void freeUserList(UserList *userList) {
 	User *cur = userList->head;
 	User *next = NULL;
