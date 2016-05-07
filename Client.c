@@ -375,8 +375,8 @@ int logoutCommand() {
   Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
   do {
     Recv(clientfd, buf, MAX_LEN, 0);
-  } while(strcmp(buf, "BYE \r\b\r\n") != 0);
-
+  } while(strcmp(buf, "BYE \r\n\r\n") != 0);
+  runFlag = FALSE;
   return TRUE;
 }
 
