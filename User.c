@@ -11,13 +11,13 @@ void copyUserList(UserList *dst, UserList *src) {
 	User *next = NULL;
 
 	int i;
-	pthread_rwlock_rdlock(&RW_lock);
+	pthread_rwlock_wrlock(&RW_lock);
 	for(i=0; i<src->count; i++) {
 		next = cur->next;
 		insertUser(dst, cur->userName, cur->begin, cur->connfd);
 		cur = next;
 	}
-	pthread_rwlock_unlock(&RW_lock);
+	pthread_rwlock_wrlock(&RW_lock);
 }
 
 void insertUser(UserList *userList, char *userName, int connfd, time_t begin) {
@@ -27,7 +27,7 @@ void insertUser(UserList *userList, char *userName, int connfd, time_t begin) {
 		return;
 	}
 
-	pthread_rwlock_rdlock(&RW_lock);
+	pthread_rwlock_wrlock(&RW_lock);
 	user = malloc(sizeof(User));
 
 	strcpy(user->userName, userName);
@@ -55,7 +55,7 @@ void deleteUser(UserList *userList, char *userName) {
 	User *next = NULL;
 
 	int i;
-	pthread_rwlock_rdlock(&RW_lock);
+	pthread_rwlock_wrlock(&RW_lock);
 
 	for(i=0; i<userList->count; i++) {
 		next = cur->next;

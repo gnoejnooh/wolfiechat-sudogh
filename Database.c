@@ -97,7 +97,7 @@ void insertAccount(sqlite3 **db, char *userName, char *hash, char *salt) {
 
   sql = sqlite3_mprintf("INSERT INTO USERS VALUES(NULL, %Q, %Q, %Q);", userName, hash, salt);
   
-  pthread_rwlock_rdlock(&RW_lock);
+  pthread_rwlock_wrlock(&RW_lock);
   rc = sqlite3_exec(*db, sql, NULL, NULL, &errMsg);
   pthread_rwlock_unlock(&RW_lock);
   sqlite3_free(sql);

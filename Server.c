@@ -92,7 +92,7 @@ int pushNameSet(NameSet *nameSet, char *name) {
   int i;
   int succeed = TRUE;
 
-  pthread_rwlock_rdlock(&RW_lock);
+  pthread_rwlock_wrlock(&RW_lock);
   for(i=0; i<nameSet->count; i++) {
     if(strcmp(nameSet->names[i], name) == 0) {
       succeed = FALSE;
@@ -113,7 +113,7 @@ void pullNameSet(NameSet *nameSet, char *name) {
   int j;
   int nameFound = FALSE;
 
-  pthread_rwlock_rdlock(&RW_lock);
+  pthread_rwlock_wrlock(&RW_lock);
   for(i=0; i<nameSet->count; i++) {
     nameFound = TRUE;
     if(strcmp(nameSet->names[i], name) == 0) {
