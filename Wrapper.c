@@ -54,8 +54,6 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 			sfwrite(&Q_lock, stdout, "\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
 		}
 	} while(strncmp(buffer, "UOFF ", 5) == 0);
-
-	
 }
 
 void RecvChat(int socket, void *buffer, size_t length, int flags) {

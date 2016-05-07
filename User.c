@@ -14,23 +14,25 @@ void copyUserList(UserList *dst, UserList *src) {
 	pthread_rwlock_rdlock(&RW_lock);
 	for(i=0; i<src->count; i++) {
 		next = cur->next;
-		insertUser(dst, cur->userName, cur->connfd);
+		insertUser(dst, cur->userName, cur->begin, cur->connfd);
 		cur = next;
 	}
 	pthread_rwlock_unlock(&RW_lock);
 }
 
-void insertUser(UserList *userList, char *userName, int connfd) {
+void insertUser(UserList *userList, char *userName, int connfd, time_t begin) {
 	User *user;
 
 	if(isUserExist(*userList, userName) == TRUE) {
 		return;
 	}
+
 	pthread_rwlock_rdlock(&RW_lock);
 	user = malloc(sizeof(User));
 
 	strcpy(user->userName, userName);
 	user->connfd = connfd;
+	user->begin = begin;
 
 	if(userList->count == 0) {
 		user->prev = NULL;
@@ -150,6 +152,25 @@ void matchUser(UserList userList, char *userName, int connfd) {
 		cur = next;
 	}
 	pthread_rwlock_unlock(&RW_lock);
+}
+
+time_t matchBegin(UserList userList, int connfd) {
+	User *cur = userList.head;
+	User *next = NULL;
+	time_t begin;
+
+	int i;
+	pthread_rwlock_rdlock(&RW_lock);
+	for(i=0; i<userList.count; i++) {
+		next = cur->next;
+		if(cur->connfd == connfd) {
+			begin = cur->begin;
+			break;
+		}
+		cur = next;
+	}
+	pthread_rwlock_unlock(&RW_lock);
+	return begin;
 }
 
 void freeUserList(UserList *userList) {

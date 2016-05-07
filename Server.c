@@ -272,7 +272,7 @@ void * loginThread(void *argv) {
         if(promptPassword(connfd, userName) == TRUE) {
           sprintf(buf, "HI %s \r\n\r\n", userName);
           Send(connfd, buf, strlen(buf), 0);
-          insertUser(&userList, userName, connfd);
+          insertUser(&userList, userName, connfd, time(NULL));
 
           sprintf(buf, "MOTD %s \r\n\r\n", motd);
           Send(connfd, buf, strlen(buf), 0);
@@ -419,8 +419,6 @@ void * communicationThread(void *argv) {
 
   struct timeval tv;
 
-  time_t begin = time(NULL);
-
   int i;
 
   pthread_detach(pthread_self());
@@ -438,7 +436,7 @@ void * communicationThread(void *argv) {
         Recv(i, buf, MAX_LEN, 0);
 
         if(strcmp(buf, "TIME \r\n\r\n") == 0) {
-          receiveTimeMessage(i, begin);
+          receiveTimeMessage(i, matchBegin(userList, i));
         } else if(strcmp(buf, "LISTU \r\n\r\n") == 0) {
           receiveListuMessage(i);
         } else if(strncmp(buf, "MSG", 3) == 0) {

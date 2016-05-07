@@ -305,7 +305,7 @@ void processChatMessage(char *to, char *from, char *msg) {
 
   if(isUserExist(userList, userName) == FALSE) {
     socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
-    insertUser(&userList, userName, socketfd[0]);
+    insertUser(&userList, userName, time(NULL), socketfd[0]);
 
     sprintf(buf, "WOLFIE CHAT with %s \n", userName);
     sprintf(fd, "%d", socketfd[1]);
