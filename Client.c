@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
   initializeUserList(&userList);
 
-  auditfd = open(auditFileName, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
+  auditfd = open(auditFileName, O_RDWR | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
 
   if((clientfd = openClientFd()) == -1) {
     printError("Failed to connect on server\n");
@@ -373,15 +373,11 @@ int logoutCommand() {
   char buf[MAX_LEN];
 
   Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
-  Recv(clientfd, buf, MAX_LEN, 0);
+  do {
+    Recv(clientfd, buf, MAX_LEN, 0);
+  } while(strcmp(buf, "BYE \r\b\r\n") != 0);
 
-  runFlag = FALSE;
-
-  if(strcmp(buf, "BYE \r\n\r\n") == 0) {
-    return TRUE;
-  } else {
-    return FALSE;
-  }
+  return TRUE;
 }
 
 int listuCommand() {
@@ -426,6 +422,8 @@ int chatCommand(char *line) {
 }
 
 int auditCommand() {
+
+
   return TRUE;
 }
 

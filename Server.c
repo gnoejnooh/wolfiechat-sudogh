@@ -445,7 +445,6 @@ void * communicationThread(void *argv) {
           receiveChatMessage(i, buf);
         } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
           matchUser(userList, userName, i);
-          printf("%s\n", userName);
           receiveByeMessage(i, userName);
 
           close(i);
