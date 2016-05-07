@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <netdb.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -31,12 +32,12 @@ extern pthread_mutex_t Q_lock;
 
 extern int verboseFlag;
 int runFlag;
-int communicationFlag;
 
 int numThread;
 
 fd_set communicationSet;
 int maxConnfd;
+int numCommunication;
 
 char motd[MAX_LEN];
 

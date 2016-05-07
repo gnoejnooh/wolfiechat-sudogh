@@ -24,10 +24,10 @@ int main(int argc, char **argv) {
 
   verboseFlag = FALSE;
   runFlag = TRUE;
-  communicationFlag = FALSE;
 
   maxConnfd = -1;
   numThread = 2;
+  numCommunication = 0;
 
   pthread_rwlock_init(&RW_lock, NULL);
   pthread_mutex_init(&Q_lock, NULL);
@@ -277,15 +277,16 @@ void * loginThread(void *argv) {
           sprintf(buf, "MOTD %s \r\n\r\n", motd);
           Send(connfd, buf, strlen(buf), 0);
 
-          if(communicationFlag == FALSE) {
+          if(numCommunication == 0) {
+            numCommunication++;
+            maxConnfd = connfd;
             FD_ZERO(&communicationSet);
             FD_SET(connfd, &communicationSet);
-            communicationFlag = TRUE;
-            maxConnfd = connfd;
             pthread_create(&tid, NULL, communicationThread, NULL);
           } else {
-            FD_SET(connfd, &communicationSet);
+            numCommunication++;
             maxConnfd = (connfd > maxConnfd) ? connfd : maxConnfd;
+            FD_SET(connfd, &communicationSet);
           }      
         }
       }
@@ -414,30 +415,39 @@ void * communicationThread(void *argv) {
   char buf[MAX_LEN];
   char userName[MAX_NAME_LEN];
 
+  fd_set communicationReadySet;
+
+  struct timeval tv;
+
   time_t begin = time(NULL);
 
   int i;
 
   pthread_detach(pthread_self());
 
+  tv.tv_sec = 1;
+  tv.tv_usec = 0;
+
   while(TRUE) {
-    select(maxConnfd+1, &communicationSet, NULL, NULL, NULL);
+
+    communicationReadySet = communicationSet;
+    select(maxConnfd+1, &communicationReadySet, NULL, NULL, &tv);
 
     for(i=3; i<maxConnfd+1; i++) {
-      if(FD_ISSET(i, &communicationSet)) {
+      if(FD_ISSET(i, &communicationReadySet)) {
         Recv(i, buf, MAX_LEN, 0);
 
         if(strcmp(buf, "TIME \r\n\r\n") == 0) {
-          puts("TEST");
           receiveTimeMessage(i, begin);
         } else if(strcmp(buf, "LISTU \r\n\r\n") == 0) {
           receiveListuMessage(i);
         } else if(strncmp(buf, "MSG", 3) == 0) {
-          puts("TEST");
           receiveChatMessage(i, buf);
         } else if(strcmp(buf, "BYE \r\n\r\n") == 0) {
           matchUser(userList, userName, i);
+          printf("%s\n", userName);
           receiveByeMessage(i, userName);
+
           close(i);
           FD_CLR(i, &communicationSet);
         }
