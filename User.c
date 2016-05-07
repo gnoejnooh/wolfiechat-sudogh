@@ -92,7 +92,7 @@ void printAllUserInfo(UserList userList) {
 	User *next = NULL;
 
 	int i;
-	pthread_mutex_t Q_lock = PTHREAD_MUTEX_INITIALIZER;
+	
 	sfwrite(&Q_lock, stdout, "There is %d user(s) exist.\n", userList.count);
 
 	pthread_rwlock_rdlock(&RW_lock);
