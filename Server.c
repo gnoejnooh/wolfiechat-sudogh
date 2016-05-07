@@ -122,11 +122,12 @@ void pullNameSet(NameSet *nameSet, char *name) {
       }
     }
   }
-  pthread_rwlock_unlock(&RW_lock);
 
   if(nameFound == TRUE) {
     (nameSet->count)--;
   }
+
+  pthread_rwlock_unlock(&RW_lock);
 }
 
 void initializeLoginQueue(LoginQueue *loginQueue, int numThread) {
