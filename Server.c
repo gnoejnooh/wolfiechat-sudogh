@@ -361,17 +361,17 @@ int authenticateUser(int connfd, char *userName) {
     
     sscanf(buf, "IAMNEW %s \r\n\r\n", userName);
 
-    if(isAccountExist(&db, userName) == TRUE || pushNameSet(nameSet, userName) == FALSE) {
+    if(isAccountExist(&db, userName) == FALSE && pushNameSet(nameSet, userName) == TRUE) {
+      sprintf(buf, "HINEW %s \r\n\r\n", userName);
+      Send(connfd, buf, strlen(buf), 0);
+
+      return TRUE;
+    } else {
       sprintf(buf, "ERR 00 USER NAME TAKEN %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
       Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
 
       return FALSE;
-    } else {
-      sprintf(buf, "HINEW %s \r\n\r\n", userName);
-      Send(connfd, buf, strlen(buf), 0);
-
-      return TRUE;
     }
   } else if (strncmp(buf, "IAM ", 4) == 0 && strcmp(&buf[strlen(buf)-5], " \r\n\r\n") == 0) {
     
