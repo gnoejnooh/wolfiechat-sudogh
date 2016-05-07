@@ -464,7 +464,8 @@ int verifyChatCommand(char *line, char *to, char *msg) {
 }
 
 void printUsage() {
-  sfwrite(&Q_lock, stderr, "USAGE: ./client [-hcv] NAME SERVER_IP SERVER_PORT\n");
+  sfwrite(&Q_lock, stderr, "USAGE: ./client [-hcv] [-a FILE] NAME SERVER_IP SERVER_PORT\n");
+  sfwrite(&Q_lock, stderr, "-a FILE            Path to the audit log file.\n");
   sfwrite(&Q_lock, stderr, "-h                 Displays help menu & returns EXIT_SUCCESS.\n");
   sfwrite(&Q_lock, stderr, "-c                 Request to server to create a new user\n");
   sfwrite(&Q_lock, stderr, "-v                 Verbose print all incoming and outgoing protocol verbs & content.\n");
@@ -477,6 +478,7 @@ void printUsage() {
   sfwrite(&Q_lock, stderr, "/logout            Logout from the server\n");
   sfwrite(&Q_lock, stderr, "/listu             Display a list of active user in current server\n");
   sfwrite(&Q_lock, stderr, "/chat <to> <msg>   Send message to indicated user\n");
+  sfwrite(&Q_lock, stderr, "/audit             Dumps the contents of the audit.log file\n");
 }
 
 void * communicationThread(void *argv) {

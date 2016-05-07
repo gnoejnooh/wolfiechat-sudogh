@@ -284,17 +284,18 @@ void shutdownCommand() {
 }
 
 void printUsage() {
-  sfwrite(&Q_lock, stderr, "USAGE: ./server [-h|-v] PORT_NUMBER MOTD\n");
-  sfwrite(&Q_lock, stderr, "-h             Displays help menu & returns EXIT_SUCCESS.\n");
-  sfwrite(&Q_lock, stderr, "-v             Verbose print all incoming and outgoing protocol verbs & content.\n");
-  sfwrite(&Q_lock, stderr, "PORT_NUMBER    Port number to listen on.\n");
-  sfwrite(&Q_lock, stderr, "MOTD           Message to display to the client when they connect.\n");
-  sfwrite(&Q_lock, stderr, "ACCOUNTS_FILE  File containing username and password data.\n");
+  sfwrite(&Q_lock, stderr, "USAGE: ./server [-h|-v] [-t THREAD_COUNT] PORT_NUMBER MOTD ACCOUNTS_FILE\n");
+  sfwrite(&Q_lock, stderr, "-h               Displays help menu & returns EXIT_SUCCESS.\n");
+  sfwrite(&Q_lock, stderr, "-t THREAD_COUNT  The number of threads used for the login queue.\n");
+  sfwrite(&Q_lock, stderr, "-v               Verbose print all incoming and outgoing protocol verbs & content.\n");
+  sfwrite(&Q_lock, stderr, "PORT_NUMBER      Port number to listen on.\n");
+  sfwrite(&Q_lock, stderr, "MOTD             Message to display to the client when they connect.\n");
+  sfwrite(&Q_lock, stderr, "ACCOUNTS_FILE    File containing username and password data.\n");
   sfwrite(&Q_lock, stderr, "\nServer Commands\n");
-  sfwrite(&Q_lock, stderr, "/users         Display a list of currently logged in users\n");
-  sfwrite(&Q_lock, stderr, "/help          Display usage statement\n");
-  sfwrite(&Q_lock, stderr, "/shutdown      Terminate server\n");
-  sfwrite(&Q_lock, stderr, "/accts         Display a list of all user accounts and information\n");
+  sfwrite(&Q_lock, stderr, "/users           Display a list of currently logged in users\n");
+  sfwrite(&Q_lock, stderr, "/help            Display usage statement\n");
+  sfwrite(&Q_lock, stderr, "/shutdown        Terminate server\n");
+  sfwrite(&Q_lock, stderr, "/accts           Display a list of all user accounts and information\n");
 }
 
 void * loginThread(void *argv) {
