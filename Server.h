@@ -41,6 +41,13 @@ int numCommunication;
 
 char motd[MAX_LEN];
 
+typedef struct nameSet {
+	char names[MAX_DUMMY_LEN][MAX_NAME_LEN];
+	int count;
+} NameSet;
+
+NameSet *nameSet;
+
 typedef struct loginQueue {
 	int *connfds;
 	int numThread;
@@ -52,12 +59,11 @@ typedef struct loginQueue {
 } LoginQueue;
 
 LoginQueue *loginQueue;
-/*
-typedef struct communicationThreadParam {
-	int connfd;
-	char userName[MAX_NAME_LEN];
-} CommunicationThreadParam;
-*/
+
+void initializeNameSet(NameSet *nameSet);
+int pushNameSet(NameSet *nameSet, char *name);
+void pullNameSet(NameSet *nameSet, char *name);
+
 void initializeLoginQueue(LoginQueue *loginQueue, int numThread);
 void freeLoginQueue(LoginQueue *loginQueue);
 void loginEnqueue(LoginQueue *loginQueue, int connfd);

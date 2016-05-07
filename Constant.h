@@ -13,6 +13,7 @@
 #define MAX_LEN				1024
 #define MAX_PORT_LEN		8
 #define MAX_NAME_LEN		16
+#define MAX_DUMMY_LEN		128
 #define MAX_ARGS_LEN		32
 #define MAX_PASSWORD_LEN	256
 #define MAX_SALT_LEN		64

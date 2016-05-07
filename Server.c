@@ -37,6 +37,9 @@ int main(int argc, char **argv) {
   loginQueue = malloc(sizeof(LoginQueue));
   initializeLoginQueue(loginQueue, numThread);
 
+  nameSet = malloc(sizeof(NameSet));
+  initializeNameSet(nameSet);
+
   openDatabase(&db, accountsFile);
   initializeUserList(&userList);
 
@@ -75,9 +78,56 @@ int main(int argc, char **argv) {
   close(listenfd);
   free(connAddr);
   freeUserList(&userList);
+  free(nameSet);
   freeLoginQueue(loginQueue);
   free(loginQueue);
   return EXIT_SUCCESS;
+}
+
+void initializeNameSet(NameSet *nameSet) {
+  nameSet->count = 0;
+}
+
+int pushNameSet(NameSet *nameSet, char *name) {
+  int i;
+  int succeed = TRUE;
+
+  pthread_rwlock_rdlock(&RW_lock);
+  for(i=0; i<nameSet->count; i++) {
+    if(strcmp(nameSet->names[i], name) == 0) {
+      succeed = FALSE;
+    }
+  }
+
+  if(nameSet->count == MAX_DUMMY_LEN) {
+    succeed = FALSE;
+  }
+
+  if(succeed == TRUE) {
+    strcpy(nameSet->names[nameSet->count], name);
+    (nameSet->count)++;
+  }
+  pthread_rwlock_unlock(&RW_lock);
+
+  return succeed;
+}
+
+void pullNameSet(NameSet *nameSet, char *name) {
+  int i;
+  int nameFound = FALSE;
+
+  pthread_rwlock_rdlock(&RW_lock);
+  for(i=0; i<nameSet->count; i++) {
+    nameFound = TRUE;
+    if(strcmp(nameSet->names[i], name) == 0) {
+      strcpy(nameSet->names[i], nameSet->names[(nameSet->count)-1]);
+    }
+  }
+  pthread_rwlock_unlock(&RW_lock);
+
+  if(nameFound == TRUE) {
+    (nameSet->count)--;
+  }
 }
 
 void initializeLoginQueue(LoginQueue *loginQueue, int numThread) {
@@ -273,6 +323,7 @@ void * loginThread(void *argv) {
           sprintf(buf, "HI %s \r\n\r\n", userName);
           Send(connfd, buf, strlen(buf), 0);
           insertUser(&userList, userName, connfd, time(NULL));
+          pullNameSet(nameSet, userName);
 
           sprintf(buf, "MOTD %s \r\n\r\n", motd);
           Send(connfd, buf, strlen(buf), 0);
@@ -288,7 +339,11 @@ void * loginThread(void *argv) {
             maxConnfd = (connfd > maxConnfd) ? connfd : maxConnfd;
             FD_SET(connfd, &communicationSet);
           }      
+        } else {
+          pullNameSet(nameSet, userName);
         }
+      } else {
+        pullNameSet(nameSet, userName);
       }
     }
   }
@@ -306,7 +361,7 @@ int authenticateUser(int connfd, char *userName) {
     
     sscanf(buf, "IAMNEW %s \r\n\r\n", userName);
 
-    if(isAccountExist(&db, userName) == TRUE) {
+    if(isAccountExist(&db, userName) == TRUE || pushNameSet(nameSet, userName) == FALSE) {
       sprintf(buf, "ERR 00 USER NAME TAKEN %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
       Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
@@ -327,7 +382,7 @@ int authenticateUser(int connfd, char *userName) {
       Send(connfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
 
       return FALSE;
-    } else if(isUserExist(userList, userName) == FALSE) {
+    } else if(isUserExist(userList, userName) == FALSE && pushNameSet(nameSet, userName) == TRUE) {
       sprintf(buf, "AUTH %s \r\n\r\n", userName);
       Send(connfd, buf, strlen(buf), 0);
 
