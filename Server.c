@@ -340,10 +340,14 @@ void * loginThread(void *argv) {
             FD_SET(connfd, &communicationSet);
           }      
         } else {
-          pullNameSet(nameSet, userName);
+          if(isUserExist(userList, userName) == TRUE) {
+            pullNameSet(nameSet, userName);
+          }
         }
       } else {
-        pullNameSet(nameSet, userName);
+        if(isUserExist(userList, userName) == TRUE) {
+          pullNameSet(nameSet, userName);
+        }
       }
     }
   }
