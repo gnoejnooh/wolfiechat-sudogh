@@ -25,25 +25,27 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 
 	memset(buffer, 0, length);
 
-	if((ch = strstr(localBuffer, "\r\n\r\n")) != NULL) {
-	
-		strcpy(temp, &ch[4]);
-		ch[4] = '\0';
-		strcpy(buffer, localBuffer);
-		strcpy(localBuffer, temp);
-	} else {
+	do {
+		if((ch = strstr(localBuffer, "\r\n\r\n")) != NULL) {
+		
+			strcpy(temp, &ch[4]);
+			ch[4] = '\0';
+			strcpy(buffer, localBuffer);
+			strcpy(localBuffer, temp);
+		} else {
 
-		if((n = recv(socket, buffer, length, flags)) == 0) {
-			return;
+			if((n = recv(socket, buffer, length, flags)) == 0) {
+				return;
+			}
+
+			strcat(localBuffer, (char *)buffer);
+			ch = strstr(localBuffer, "\r\n\r\n");
+			strcpy(temp, &ch[4]);
+			ch[4] = '\0';
+			strcpy(buffer, localBuffer);
+			strcpy(localBuffer, temp);
 		}
-
-		strcat(localBuffer, (char *)buffer);
-		ch = strstr(localBuffer, "\r\n\r\n");
-		strcpy(temp, &ch[4]);
-		ch[4] = '\0';
-		strcpy(buffer, localBuffer);
-		strcpy(localBuffer, temp);
-	}
+	} while(strncmp(buffer, "UOFF ", 5) == 0);
 
 	if(verboseFlag == TRUE) {
 		strcpy(msg, buffer);
