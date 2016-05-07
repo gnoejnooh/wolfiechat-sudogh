@@ -99,10 +99,6 @@ int pushNameSet(NameSet *nameSet, char *name) {
     }
   }
 
-  if(nameSet->count == MAX_DUMMY_LEN) {
-    succeed = FALSE;
-  }
-
   if(succeed == TRUE) {
     strcpy(nameSet->names[nameSet->count], name);
     (nameSet->count)++;
@@ -114,13 +110,16 @@ int pushNameSet(NameSet *nameSet, char *name) {
 
 void pullNameSet(NameSet *nameSet, char *name) {
   int i;
+  int j;
   int nameFound = FALSE;
 
   pthread_rwlock_rdlock(&RW_lock);
   for(i=0; i<nameSet->count; i++) {
     nameFound = TRUE;
     if(strcmp(nameSet->names[i], name) == 0) {
-      strcpy(nameSet->names[i], nameSet->names[(nameSet->count)-1]);
+      for(j=i; j<nameSet->count-1; j++) {
+        strcpy(nameSet->names[j], nameSet->names[j+1]);
+      }
     }
   }
   pthread_rwlock_unlock(&RW_lock);
