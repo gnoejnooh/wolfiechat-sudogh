@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
   initializeUserList(&userList);
 
-  auditfd = open(auditFileName, O_RDWR | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
+  auditfd = open(auditFileName, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
 
   if((clientfd = openClientFd()) == -1) {
     printError("Failed to connect on server\n");
@@ -242,6 +242,9 @@ void executeCommand() {
   } else if(strncmp(buf, "/chat", 5) == 0) {
   	isSucceed = chatCommand(buf);
     printCmdLog(auditfd, name, event, isSucceed, "client");
+  } else if(strcmp(buf, "/audit\n") == 0) {
+    isSucceed = auditCommand();
+    printCmdLog(auditfd, name, event, isSucceed, "client");
   } else {
     printError("Command does not exist\n");
     printCmdLog(auditfd, name, event, isSucceed, "client");
@@ -422,6 +425,27 @@ int chatCommand(char *line) {
 
 int auditCommand() {
 
+  char unitLog[MAX_LEN];
+  char *auditLog = malloc(sizeof(char) * MAX_LEN);
+  int unitLen = MAX_LEN;
+  int bytesRead;
+  int logfd = open(auditFileName, O_RDONLY);
+  memset(auditLog, 0, MAX_LEN);
+
+  do {
+    memset(unitLog, 0, MAX_LEN);
+    bytesRead = read(logfd, unitLog, MAX_LEN);
+    strcat(auditLog, unitLog);
+
+    if(unitLen == strlen(auditLog)) {
+      unitLen *= 2;
+      auditLog = realloc(auditLog, sizeof(char) * unitLen);
+    }
+  } while(bytesRead != 0);
+
+  sfwrite(&Q_lock, stdout, "%s", auditLog);
+
+  close(logfd);
 
   return TRUE;
 }

@@ -45,15 +45,17 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 			strcpy(buffer, localBuffer);
 			strcpy(localBuffer, temp);
 		}
+
+		if(verboseFlag == TRUE) {
+			strcpy(msg, buffer);
+			if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
+				msg[strlen(msg)-5] = '\0';
+			}
+			sfwrite(&Q_lock, stdout, "\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
+		}
 	} while(strncmp(buffer, "UOFF ", 5) == 0);
 
-	if(verboseFlag == TRUE) {
-		strcpy(msg, buffer);
-		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
-			msg[strlen(msg)-5] = '\0';
-		}
-		sfwrite(&Q_lock, stdout, "\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
-	}
+	
 }
 
 void RecvChat(int socket, void *buffer, size_t length, int flags) {
