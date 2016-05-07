@@ -17,7 +17,7 @@ void copyUserList(UserList *dst, UserList *src) {
 		insertUser(dst, cur->userName, cur->begin, cur->connfd);
 		cur = next;
 	}
-	pthread_rwlock_wrlock(&RW_lock);
+	pthread_rwlock_unlock(&RW_lock);
 }
 
 void insertUser(UserList *userList, char *userName, int connfd, time_t begin) {
@@ -80,7 +80,7 @@ void deleteUser(UserList *userList, char *userName) {
 
 			(userList->count)--;
 			free(cur);
-			return;
+			break;
 		}
 		cur = next;
 	}
@@ -109,33 +109,36 @@ int isUserExist(UserList userList, char *userName) {
 	User *next = NULL;
 
 	int i;
+	int userExist = FALSE;
 	pthread_rwlock_rdlock(&RW_lock);
 	for(i=0; i<userList.count; i++) {
 		next = cur->next;
 		if(strcmp(cur->userName, userName) == 0) {
-			return TRUE;
+			userExist = TRUE;
 		}
 		cur = next;
 	}
 	pthread_rwlock_unlock(&RW_lock);
-	return FALSE;
+	return userExist;
 }
 
 User * findUser(UserList userList, char *userName) {
 	User *cur = userList.head;
 	User *next = NULL;
+	User *user = NULL;
 
 	int i;
 	pthread_rwlock_rdlock(&RW_lock);
 	for(i=0; i<userList.count; i++) {
 		next = cur->next;
 		if(strcmp(cur->userName, userName) == 0) {
-			return cur;
+			user = cur;
+			break;
 		}
 		cur = next;
 	}
 	pthread_rwlock_unlock(&RW_lock);
-	return NULL;
+	return user;
 }
 
 void matchUser(UserList userList, char *userName, int connfd) {
