@@ -189,7 +189,61 @@ void printEntireLogInfo(LogList logList) {
 }
 
 void sortLogInfo(LogList logList) {
+	
+	int runFlag = TRUE;
+	int option = 0;
+	int order = 0;
 
+	char *cmd[16] = {"/usr/bin/sort", "-k2", "audit.log"};
+	char buf[MAX_LEN];
+	
+
+	pid_t pid;
+	
+	while(runFlag == TRUE) {
+		printf("\n>> SELECT COLUMN [1 - 6]: ");
+		scanf("%d", &option);
+		while(getchar() != '\n');
+
+		while(validateOption(option) == FALSE) {
+			printf("\nERROR: INVALID OPTION! PLEASE RETRY\n");
+			printf(">> SELECT COLUMN[1 - 6]: ");
+			scanf("%d", &option);
+			while(getchar() != '\n');
+		}
+
+		printf("OPTION [1 - 2]\n");
+		printf("1: Sort log in ascending order\n");
+		printf("2: Sort log in decending order\n");
+		printf("\n>> SELECT ORDER [1 - 2]: ");
+		scanf("%d", &order);
+		while(getchar() != '\n');
+
+		while(validateOption(option) == FALSE) {
+			printf("\nERROR: INVALID OPTION! PLEASE RETRY\n");
+			printf(">> SELECT ORDER[1 - 2]: ");
+			scanf("%d", &order);
+			while(getchar() != '\n');
+		}
+		break;
+	}
+	
+	sprintf(buf, "-k%d", option);
+	cmd[1] = buf;
+	
+	if(order == 2) {
+		cmd[2] = "-r";
+		cmd[3] = "audit.log";
+	} else {
+		cmd[2] = "audit.log";	
+	}
+	if((pid = fork()) == 0) {
+		if(execv(cmd[0], cmd) < 0) {
+			fprintf(stderr, "%s: command not found\n", cmd[0]);
+			exit(EXIT_FAILURE);
+		}
+	}
+	waitpid(pid, 0, 0);
 }
 
 void filterLogInfo(LogList logList) {
