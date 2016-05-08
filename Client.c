@@ -304,8 +304,10 @@ void processChatMessage(char *to, char *from, char *msg) {
   }
 
   if(isUserExist(userList, userName) == FALSE) {
+    int *connfd;
+
     socketpair(AF_UNIX, SOCK_STREAM, 0, socketfd);
-    insertUser(&userList, userName, time(NULL), socketfd[0]);
+    insertUser(&userList, userName, socketfd[0], time(NULL));
 
     sprintf(buf, "WOLFIE CHAT with %s \n", userName);
     sprintf(fd, "%d", socketfd[1]);
@@ -336,7 +338,9 @@ void processChatMessage(char *to, char *from, char *msg) {
     }
 
     communicationThreadParam = malloc(sizeof(CommunicationThreadParam));
-    communicationThreadParam->connfd = socketfd[0];
+    connfd = malloc(sizeof(int));
+    *connfd = socketfd[0];
+    communicationThreadParam->connfd = connfd;
     strcpy(communicationThreadParam->userName, userName);
     pthread_create(&tid, NULL, communicationThread, communicationThreadParam);
     
@@ -483,7 +487,7 @@ void printUsage() {
 
 void * communicationThread(void *argv) {
   CommunicationThreadParam *param = (CommunicationThreadParam *)argv;
-  int connfd = param->connfd;
+  int connfd = *param->connfd;
   char userName[MAX_NAME_LEN];
 
   char buf[MAX_LEN];
@@ -492,6 +496,7 @@ void * communicationThread(void *argv) {
   strcpy(userName, param->userName);
 
   pthread_detach(pthread_self());
+  free(param->connfd);
   free(argv);
 
   while(TRUE) {

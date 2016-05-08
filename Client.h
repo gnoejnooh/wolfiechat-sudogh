@@ -39,7 +39,7 @@ extern int verboseFlag;
 int createUserFlag;
 
 typedef struct communicationThreadParam {
-	int connfd;
+	int *connfd;
 	char userName[MAX_NAME_LEN];
 } CommunicationThreadParam;
 

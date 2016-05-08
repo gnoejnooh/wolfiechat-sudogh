@@ -11,6 +11,7 @@
 #define STDERR				2
 
 #define MAX_LEN				1024
+#define MAX_LOG_LEN			8
 #define MAX_PORT_LEN		8
 #define MAX_NAME_LEN		16
 #define MAX_DUMMY_LEN		128
