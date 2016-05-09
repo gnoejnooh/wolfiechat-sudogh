@@ -261,7 +261,9 @@ void receiveMessage() {
   } else if(strncmp(buf, "ERR 01", 5) == 0) {
     printError("User not avaiable\n");
     printErrLog(auditfd, name, "ERR 01 USER NOT AVAILABLE");
-  }
+  } else if(strncmp(buf, "UOFF", 4) == 0) {
+    return;
+  } 
 }
 
 void receiveChatMessage(char *line) {
@@ -380,7 +382,9 @@ int logoutCommand() {
   char buf[MAX_LEN];
 
   Send(clientfd, "BYE \r\n\r\n", strlen("BYE \r\n\r\n"), 0);
-  Recv(clientfd, buf, MAX_LEN, 0);
+  do {
+    Recv(clientfd, buf, MAX_LEN, 0);
+  } while(strncmp(buf, "UOFF", 4) == 0);
   
   runFlag = FALSE;
   return TRUE;
