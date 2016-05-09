@@ -146,8 +146,6 @@ void printEntireLogInfo(LogList logList) {
 	LogInfo *next = NULL;
 
 	int i;
-
-	puts("TEST");
 	printf("%d\n", logList.count);
 
 	printf("\e[32m%20s \e[33m%10s \e[34m%10s \e[35m%20s \e[36m%10s \e[39m%-30s\n\n",
@@ -282,13 +280,52 @@ void filterLogInfo(LogList logList, char *fileName) {
 }
 
 void filterLogByTime(LogList logList) {
+
+	int i;
+	int start;
+	int end;
+
 	char timeStart[MAX_LEN];
 	char timeEnd[MAX_LEN];
+
+	LogInfo *cur = logList.head;
+	LogInfo *next = NULL;
 
 	printf(">>ENTER START TIMESTAMP (MM/DD/YY-hour:minute[AM/PM]): ");
 	scanf("%[^\n]%*c", timeStart);
 	printf(">>ENTER END TIMESTAMP (MM/DD/YY-hour:minute[AM/PM]): ");
 	scanf("%[^\n]%*c", timeEnd);
+
+	printf("\e[32m%20s \e[33m%10s \e[34m%10s \e[35m%20s \e[36m%10s \e[39m%-30s\n\n",
+		"A", "B", "C", "D", "E", "F");
+
+	for(i=0; i<logList.count; i++) {
+		next = cur->next;
+		start = strncmp(timeStart, cur->logElements[0], strlen(timeStart));
+		end = strncmp(timeEnd, cur->logElements[0], strlen(timeEnd));
+		if(start <= 0 && end >= 0) {
+			if(strcmp((cur->logElements)[2], "LOGIN") == 0) {
+				printf("\e[32m%20s \e[33m%10s \e[34m%10s \e[35m%20s \e[36m%10s \e[39m%s\n",
+					(cur->logElements)[0], (cur->logElements)[1], (cur->logElements)[2],
+					(cur->logElements)[3], (cur->logElements)[4], (cur->logElements)[5]);
+			} else if(strcmp((cur->logElements)[2], "CMD") == 0) {
+				printf("\e[32m%20s \e[33m%10s \e[34m%10s \e[35m%20s \e[36m%10s \e[39m%s\n",
+					(cur->logElements)[0], (cur->logElements)[1], (cur->logElements)[2],
+					(cur->logElements)[3], (cur->logElements)[4], (cur->logElements)[5]);
+			} else if(strcmp((cur->logElements)[2], "MSG") == 0) {
+				printf("\e[32m%20s \e[33m%10s \e[34m%10s \e[35m%20s \e[36m%10s \e[39m%s\n",
+					(cur->logElements)[0], (cur->logElements)[1], (cur->logElements)[2],
+					(cur->logElements)[3], (cur->logElements)[4], (cur->logElements)[5]);
+			} else if(strcmp((cur->logElements)[2], "LOGOUT") == 0) {
+				printf("\e[32m%20s \e[33m%10s \e[34m%10s \e[35m%20s \e[39m\n",
+					(cur->logElements)[0], (cur->logElements)[1], (cur->logElements)[2], (cur->logElements)[3]);
+			} else if(strcmp((cur->logElements)[2], "ERR") == 0) {
+				printf("\e[32m%20s \e[33m%10s \e[34m%10s \e[35m%20s \e[39m\n",
+					(cur->logElements)[0], (cur->logElements)[1], (cur->logElements)[2], (cur->logElements)[3]);
+			}
+		}
+		cur = next;
+	}
 }
 
 void searchKeywords(LogList logList) {
