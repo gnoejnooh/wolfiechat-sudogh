@@ -26,13 +26,17 @@ void getFileName(char *fileName);
 void parseFile(FILE *fp, LogList *logList);
 
 void promptUsage();
-int validateOption(int option);
+void promptSortOption();
+void promptFilterOption();
+void promptKeyword();
+int validateOption(int option, int maxOption);
 
-void executeOption(int option, LogList logList);
+void executeOption(int option, LogList logList, char *fileName);
 
 void printEntireLogInfo(LogList logList);
-void sortLogInfo(LogList logList);
-void filterLogInfo(LogList logList);
+void sortLogInfo(LogList logList, char *fileName);
+void filterLogInfo(LogList logList, char *fileName);
+void filterLogByTime(LogList logList);
 void searchKeywords(LogList logList);
 
 void initializeLogList(LogList *logList);

@@ -23,14 +23,13 @@ int main(void) {
 		scanf("%d", &option);
 		while(getchar() != '\n');
 
-		while(validateOption(option) == FALSE) {
-			printf("\nERROR: INVALID OPTION! PLEASE RETRY\n");
+		while(validateOption(option, 5) == FALSE) {
 			printf(">> SELECT OPTION[1 - 5]: ");
 			scanf("%d", &option);
 			while(getchar() != '\n');
 		}
 
-		executeOption(option, *logList);
+		executeOption(option, *logList, fileName);
 	}
 
 	freeLogList(logList);
@@ -109,34 +108,25 @@ void parseFile(FILE *fp, LogList *logList) {
 	}
 }
 
-void promptUsage() {
-	printf("OPTION [1 - 5]\n");
-	printf("1: Print entire log info\n");
-	printf("2: Sort the logs by column\n");
-	printf("3: Filter logs based on field\n");
-	printf("4: Search keywords\n");
-	printf("5: Exit program\n");
-	printf("\n>> SELECT OPTION [1 - 5]: ");
-}
-
-int validateOption(int option) {
-	if(option >= 1 && option <= 5) {
+int validateOption(int option, int maxOption) {
+	if(option >= 1 && option <= maxOption) {
 		return TRUE;
 	} else {
+		printf("\nERROR: INVALID OPTION! PLEASE RETRY\n");
 		return FALSE;
 	}
 }
 
-void executeOption(int option, LogList logList) {
+void executeOption(int option, LogList logList, char *fileName) {
 	switch(option) {
 	case 1:
 		printEntireLogInfo(logList);
 		break;
 	case 2:
-		sortLogInfo(logList);
+		sortLogInfo(logList, fileName);
 		break;
 	case 3:
-		filterLogInfo(logList);
+		filterLogInfo(logList, fileName);
 		break;
 	case 4:
 		searchKeywords(logList);
@@ -188,15 +178,14 @@ void printEntireLogInfo(LogList logList) {
 	}
 }
 
-void sortLogInfo(LogList logList) {
+void sortLogInfo(LogList logList, char *fileName) {
 	
 	int runFlag = TRUE;
 	int option = 0;
 	int order = 0;
 
-	char *cmd[16] = {"/usr/bin/sort", "-k2", "audit.log"};
+	char *cmd[16] = {"/usr/bin/sort"};
 	char buf[MAX_LEN];
-	
 
 	pid_t pid;
 	
@@ -205,22 +194,17 @@ void sortLogInfo(LogList logList) {
 		scanf("%d", &option);
 		while(getchar() != '\n');
 
-		while(validateOption(option) == FALSE) {
-			printf("\nERROR: INVALID OPTION! PLEASE RETRY\n");
+		while(validateOption(option, 6) == FALSE) {
 			printf(">> SELECT COLUMN[1 - 6]: ");
 			scanf("%d", &option);
 			while(getchar() != '\n');
 		}
 
-		printf("OPTION [1 - 2]\n");
-		printf("1: Sort log in ascending order\n");
-		printf("2: Sort log in decending order\n");
-		printf("\n>> SELECT ORDER [1 - 2]: ");
+		promptSortOption();
 		scanf("%d", &order);
 		while(getchar() != '\n');
 
-		while(validateOption(option) == FALSE) {
-			printf("\nERROR: INVALID OPTION! PLEASE RETRY\n");
+		while(validateOption(order, 2) == FALSE) {
 			printf(">> SELECT ORDER[1 - 2]: ");
 			scanf("%d", &order);
 			while(getchar() != '\n');
@@ -233,10 +217,13 @@ void sortLogInfo(LogList logList) {
 	
 	if(order == 2) {
 		cmd[2] = "-r";
-		cmd[3] = "audit.log";
+		cmd[3] = fileName;
+		cmd[4] = (void *)NULL;
 	} else {
-		cmd[2] = "audit.log";	
+		cmd[2] = fileName;
+		cmd[3] = (void *)NULL;	
 	}
+
 	if((pid = fork()) == 0) {
 		if(execv(cmd[0], cmd) < 0) {
 			fprintf(stderr, "%s: command not found\n", cmd[0]);
@@ -246,8 +233,60 @@ void sortLogInfo(LogList logList) {
 	waitpid(pid, 0, 0);
 }
 
-void filterLogInfo(LogList logList) {
+void filterLogInfo(LogList logList, char *fileName) {
 
+	int runFlag = TRUE;
+	int option = 0;
+
+	char *cmd[16] = {"grep", "-a"};
+	char buf[MAX_LEN];
+	
+	pid_t pid;
+
+	while(runFlag == TRUE) {
+		promptFilterOption();
+		scanf("%d", &option);
+		while(getchar() != '\n');
+
+		while(validateOption(option, 6) == FALSE) {
+			printf("\nERROR: INVALID OPTION! PLEASE RETRY\n");
+			printf(">> SELECT COLUMN[1 - 6]: ");
+			scanf("%d", &option);
+			while(getchar() != '\n');
+		}	
+		
+		if(option == 1) {
+			promptKeyword();
+			scanf("%[^\n]%*c", buf);	
+		} else {
+			filterLogByTime(logList);
+			return;
+		}
+		
+		break;
+	}
+
+	cmd[2] = buf;
+	cmd[3] = fileName;
+	cmd[4] = (void *)NULL;
+
+	if((pid = fork()) == 0) {
+		if(execvp(cmd[0], cmd) < 0) {
+			fprintf(stderr, "%s: command not found\n", cmd[0]);
+			exit(EXIT_FAILURE);
+		}
+	}
+	waitpid(pid, 0, 0);
+}
+
+void filterLogByTime(LogList logList) {
+	char timeStart[MAX_LEN];
+	char timeEnd[MAX_LEN];
+
+	printf(">>ENTER START TIMESTAMP (MM/DD/YY-hour:minute[AM/PM]): ");
+	scanf("%[^\n]%*c", timeStart);
+	printf(">>ENTER END TIMESTAMP (MM/DD/YY-hour:minute[AM/PM]): ");
+	scanf("%[^\n]%*c", timeEnd);
 }
 
 void searchKeywords(LogList logList) {
@@ -293,4 +332,40 @@ void freeLogList(LogList *logList) {
 		free(cur);
 		cur = next;
 	}
+}
+
+void promptUsage() {
+	printf("OPTION [1 - 5]\n");
+	printf("1: Print entire log info\n");
+	printf("2: Sort the logs by column\n");
+	printf("3: Filter logs based on field\n");
+	printf("4: Search keywords\n");
+	printf("5: Exit program\n");
+	printf("\n>> SELECT OPTION [1 - 5]: ");
+}
+
+void promptSortOption() {
+	printf("OPTION [1 - 2]\n");
+	printf("1: Sort log in ascending order\n");
+	printf("2: Sort log in decending order\n");
+	printf("\n>> SELECT ORDER [1 - 2]: ");
+}
+
+void promptFilterOption() {
+	printf("OPTION [1 - 2]\n");
+	printf("1: Filter by keyword\n");
+	printf("2: Filter by time\n");
+	printf("\n>> SELECT ORDER [1 - 2]: ");
+}
+
+void promptKeyword() {
+	printf("Date-Timestamp: mm/dd/yy-hh:mm[am/pm]\n");
+	printf("Username\n");
+	printf("Event: LOGIN, CMD, MSG, LOGOUT, ERR\n");
+	printf("LOGIN: IP:port, success/fail, ERR # message or MOTD\n");
+	printf("CMD: thecommand, success/fail, chat/client\n");
+	printf("MSG: to/from, user, message\n");
+	printf("LOGOUT: intentional/error\n");
+	printf("ERR: ERR # message\n");
+	printf("\n>> SELECT KEYWORD: ");
 }
