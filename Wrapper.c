@@ -25,35 +25,33 @@ void Recv(int socket, void *buffer, size_t length, int flags) {
 
 	memset(buffer, 0, length);
 
-	do {
-		if((ch = strstr(localBuffer, "\r\n\r\n")) != NULL) {
+	if((ch = strstr(localBuffer, "\r\n\r\n")) != NULL) {
 		
-			strcpy(temp, &ch[4]);
-			ch[4] = '\0';
-			strcpy(buffer, localBuffer);
-			strcpy(localBuffer, temp);
-		} else {
+		strcpy(temp, &ch[4]);
+		ch[4] = '\0';
+		strcpy(buffer, localBuffer);
+		strcpy(localBuffer, temp);
+	} else {
 
-			if((n = recv(socket, buffer, length, flags)) == 0) {
-				return;
-			}
-
-			strcat(localBuffer, (char *)buffer);
-			ch = strstr(localBuffer, "\r\n\r\n");
-			strcpy(temp, &ch[4]);
-			ch[4] = '\0';
-			strcpy(buffer, localBuffer);
-			strcpy(localBuffer, temp);
+		if((n = recv(socket, buffer, length, flags)) == 0) {
+			return;
 		}
 
-		if(verboseFlag == TRUE) {
-			strcpy(msg, buffer);
-			if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
-				msg[strlen(msg)-5] = '\0';
-			}
-			sfwrite(&Q_lock, stdout, "\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
+		strcat(localBuffer, (char *)buffer);
+		ch = strstr(localBuffer, "\r\n\r\n");
+		strcpy(temp, &ch[4]);
+		ch[4] = '\0';
+		strcpy(buffer, localBuffer);
+		strcpy(localBuffer, temp);
+	}
+
+	if(verboseFlag == TRUE) {
+		strcpy(msg, buffer);
+		if(strcmp(&msg[strlen(msg)-4], "\r\n\r\n") == 0) {
+			msg[strlen(msg)-5] = '\0';
 		}
-	} while(strncmp(buffer, "UOFF ", 5) == 0);
+		sfwrite(&Q_lock, stdout, "\x1B[1;34mIncoming: %s\x1B[0m\n", msg);
+	}
 }
 
 void RecvChat(int socket, void *buffer, size_t length, int flags) {
