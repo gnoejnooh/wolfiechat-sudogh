@@ -137,6 +137,8 @@ void executeOption(int option, LogList logList, char *fileName) {
 	default:
 		break;
 	}
+
+	puts("");
 }
 
 void printEntireLogInfo(LogList logList) {
