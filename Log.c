@@ -238,7 +238,7 @@ void filterLogInfo(LogList logList, char *fileName) {
 	int runFlag = TRUE;
 	int option = 0;
 
-	char *cmd[16] = {"grep", "-a"};
+	char *cmd[16] = {"grep", "--color=always", "-a"};
 	char buf[MAX_LEN];
 	
 	pid_t pid;
@@ -266,9 +266,9 @@ void filterLogInfo(LogList logList, char *fileName) {
 		break;
 	}
 
-	cmd[2] = buf;
-	cmd[3] = fileName;
-	cmd[4] = (void *)NULL;
+	cmd[3] = buf;
+	cmd[4] = fileName;
+	cmd[5] = (void *)NULL;
 
 	if((pid = fork()) == 0) {
 		if(execvp(cmd[0], cmd) < 0) {
